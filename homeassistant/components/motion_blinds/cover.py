@@ -13,6 +13,7 @@ from homeassistant.components.cover import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv, entity_platform
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -145,7 +146,7 @@ class MotionPositionDevice(CoordinatorEntity, CoverEntity):
             manufacturer=MANUFACTURER,
             model=blind.blind_type,
             name=f"{blind.blind_type}-{blind.mac[12:]}",
-            via_device=(DOMAIN, config_entry.unique_id),
+            via_device=(CONNECTION_NETWORK_MAC, blind._gateway.mac),
         )
 
     @property

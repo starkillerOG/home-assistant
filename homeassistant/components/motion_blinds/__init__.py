@@ -165,7 +165,6 @@ async def async_setup_entry(
     device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
         connections={(dr.CONNECTION_NETWORK_MAC, motion_gateway.mac)},
-        identifiers={(DOMAIN, entry.unique_id)},
         manufacturer=MANUFACTURER,
         name=entry.title,
         model="Wi-Fi bridge",
