@@ -52,12 +52,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         name=router.device_name,
         model=router.model,
         sw_version=router.firmware_version,
+        hw_version=router.hardware_version,
         configuration_url=f"http://{entry.data[CONF_HOST]}/",
     )
 
     async def async_update_data():
         """Fetch data from the router."""
         await router.async_update_device_trackers()
+        await router.async_get_traffic_meter()
         return
 
     # Create update coordinator
@@ -81,7 +83,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["router"])
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["router", "sensor"])
 
     if unload_ok:
         hass.data[DOMAIN].pop(entry.unique_id)

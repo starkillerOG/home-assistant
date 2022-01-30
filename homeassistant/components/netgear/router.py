@@ -137,6 +137,9 @@ class NetgearRouter:
         self._attrs = {}
 
         self.devices = {}
+        
+        self.N_traffic_meter = 0
+        self.traffic_data = None
 
     def _setup(self) -> None:
         """Set up a Netgear router sync portion."""
@@ -152,6 +155,8 @@ class NetgearRouter:
         self.device_name = self._info.get("DeviceName", DEFAULT_NAME)
         self.model = self._info.get("ModelName")
         self.firmware_version = self._info.get("Firmwareversion")
+        self.hardware_version = self._info.get("Hardwareversion")
+        self.serial_number = self._info["SerialNumber"]
 
         for model in MODELS_V2:
             if self.model.startswith(model):
@@ -234,6 +239,11 @@ class NetgearRouter:
             _LOGGER.debug("Netgear tracker: new device found")
             async_dispatcher_send(self.hass, self.signal_device_new)
 
+    async def async_get_traffic_meter(self) -> None:
+        """Get the traffic meter data of the router."""
+        if self.N_traffic_meter>0
+            self.traffic_data = await self.hass.async_add_executor_job(self._api.get_traffic_meter)
+
     @property
     def signal_device_new(self) -> str:
         """Event specific per Netgear entry to signal new device."""
@@ -303,4 +313,44 @@ class NetgearDeviceEntity(CoordinatorEntity, Entity):
             default_name=self._device_name,
             default_model=self._device["device_model"],
             via_device=(DOMAIN, self._router.unique_id),
+        )
+
+class NetgearRouterEntity(CoordinatorEntity, Entity):
+    """Base class for a Netgear router entity."""
+
+    def __init__(
+        self, coordinator: DataUpdateCoordinator, router: NetgearRouter
+    ) -> None:
+        """Initialize a Netgear device."""
+        super().__init__(coordinator)
+        self._router = router
+        self._name = router.device_name
+        self._unique_id = router.serial_number
+
+    @abstractmethod
+    @callback
+    def async_update_device(self) -> None:
+        """Update the Netgear device."""
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self.async_update_device()
+        super()._handle_coordinator_update()
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID."""
+        return self._unique_id
+
+    @property
+    def name(self) -> str:
+        """Return the name."""
+        return self._name
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device information."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._router.unique_id)},
         )
