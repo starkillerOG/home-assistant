@@ -195,6 +195,7 @@ class NetgearRouter:
                 "ip": None,
                 "ssid": None,
                 "conn_ap_mac": None,
+                "allow_or_block": "Allow",
             }
 
         await self.async_update_device_trackers()
