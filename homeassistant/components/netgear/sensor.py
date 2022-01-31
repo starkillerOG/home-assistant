@@ -191,7 +191,7 @@ class NetgearRouterTrafficEntity(NetgearRouterEntity, SensorEntity):
         """Initialize a Netgear device."""
         super().__init__(coordinator, router)
         self._attribute = attribute
-        self.entity_description = SENSOR_TYPES[self._attribute]
+        self.entity_description = SENSOR_TRAFFIC_TYPES[self._attribute]
         self._name = f"{router.device_name} {self.entity_description.name}"
         self._unique_id = f"{router.serial_number}-{self._attribute}"
         self._traffic = None
