@@ -135,7 +135,7 @@ class NetgearRouter:
         )
         self._consider_home = timedelta(seconds=consider_home_int)
 
-        self._api: Netgear = None
+        self.api: Netgear = None
         self._attrs = {}
 
         self.devices = {}
@@ -145,7 +145,7 @@ class NetgearRouter:
 
     def _setup(self) -> None:
         """Set up a Netgear router sync portion."""
-        self._api = get_api(
+        self.api = get_api(
             self._password,
             self._host,
             self._username,
@@ -153,7 +153,7 @@ class NetgearRouter:
             self._ssl,
         )
 
-        self._info = self._api.get_info()
+        self._info = self.api.get_info()
         self.device_name = self._info.get("DeviceName", DEFAULT_NAME)
         self.model = self._info.get("ModelName")
         self.firmware_version = self._info.get("Firmwareversion")
@@ -165,7 +165,7 @@ class NetgearRouter:
                 self.method_version = 2
 
         if self.method_version == 2:
-            if not self._api.get_attached_devices_2():
+            if not self.api.get_attached_devices_2():
                 _LOGGER.error(
                     "Netgear Model '%s' in MODELS_V2 list, but failed to get attached devices using V2",
                     self.model,
@@ -207,10 +207,10 @@ class NetgearRouter:
         """Get the devices connected to the router."""
         if self.method_version == 1:
             return await self.hass.async_add_executor_job(
-                self._api.get_attached_devices
+                self.api.get_attached_devices
             )
 
-        return await self.hass.async_add_executor_job(self._api.get_attached_devices_2)
+        return await self.hass.async_add_executor_job(self.api.get_attached_devices_2)
 
     async def async_update_device_trackers(self, now=None) -> None:
         """Update Netgear devices."""
@@ -246,7 +246,7 @@ class NetgearRouter:
         """Get the traffic meter data of the router."""
         if self.traffic_meter_entities > 0:
             self.traffic_data = await self.hass.async_add_executor_job(
-                self._api.get_traffic_meter
+                self.api.get_traffic_meter
             )
 
     @property
@@ -257,12 +257,12 @@ class NetgearRouter:
     @property
     def port(self) -> int:
         """Port used by the API."""
-        return self._api.port
+        return self.api.port
 
     @property
     def ssl(self) -> bool:
         """SSL used by the API."""
-        return self._api.ssl
+        return self.api.ssl
 
 
 class NetgearDeviceEntity(CoordinatorEntity, Entity):

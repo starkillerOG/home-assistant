@@ -44,6 +44,8 @@ async def async_setup_entry(
 class NetgearAllowBlock(NetgearDeviceEntity, SwitchEntity):
     """Allow or Block a device from the network."""
 
+    _attr_entity_registry_enabled_default = False
+
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
@@ -72,13 +74,13 @@ class NetgearAllowBlock(NetgearDeviceEntity, SwitchEntity):
     async def async_turn_on(self, **kwargs):
         """Turn the switch on."""
         await self.hass.async_add_executor_job(
-            self._router.allow_block_device, self._mac, ALLOW
+            self._router.api.allow_block_device, self._mac, ALLOW
         )
 
     async def async_turn_off(self, **kwargs):
         """Turn the switch off."""
         await self.hass.async_add_executor_job(
-            self._router.allow_block_device, self._mac, BLOCK
+            self._router.api.allow_block_device, self._mac, BLOCK
         )
 
     @callback
