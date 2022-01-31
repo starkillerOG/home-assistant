@@ -5,17 +5,18 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, DATA_MEGABYTES
+from homeassistant.const import DATA_MEGABYTES, PERCENTAGE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .router import NetgearDeviceEntity, NetgearRouterEntity, NetgearRouter, async_setup_netgear_entry
-from .const import (
-    DOMAIN,
-    KEY_COORDINATOR,
-    KEY_ROUTER,
+from .const import DOMAIN, KEY_COORDINATOR, KEY_ROUTER
+from .router import (
+    NetgearDeviceEntity,
+    NetgearRouter,
+    NetgearRouterEntity,
+    async_setup_netgear_entry,
 )
 
 SENSOR_TYPES = {
@@ -131,18 +132,14 @@ async def async_setup_entry(
         ]
 
     async_setup_netgear_entry(hass, entry, async_add_entities, generate_sensor_classes)
-    
+
     router = hass.data[DOMAIN][entry.unique_id][KEY_ROUTER]
     coordinator = hass.data[DOMAIN][entry.unique_id][KEY_COORDINATOR]
     entities = []
-    
+
     for attribute in SENSOR_TRAFFIC_TYPES:
-        entities.append(
-            NetgearRouterTrafficEntity(
-                coordinator, router, attribute
-            )
-        )
-        
+        entities.append(NetgearRouterTrafficEntity(coordinator, router, attribute))
+
     async_add_entities(entities)
 
 
@@ -178,6 +175,7 @@ class NetgearSensorEntity(NetgearDeviceEntity, SensorEntity):
         self._active = self._device["active"]
         if self._device.get(self._attribute) is not None:
             self._state = self._device[self._attribute]
+
 
 class NetgearRouterTrafficEntity(NetgearRouterEntity, SensorEntity):
     """Representation of a device connected to a Netgear router."""
@@ -227,10 +225,10 @@ class NetgearRouterTrafficEntity(NetgearRouterEntity, SensorEntity):
 
     async def async_added_to_hass(self):
         """Entity added to hass."""
-        self._router.N_traffic_meter = self._router.N_traffic_meter + 1
+        self._router.traffic_meter_entities = self._router.traffic_meter_entities + 1
         await super().async_added_to_hass()
 
     async def async_will_remove_from_hass(self):
         """Entity removed from hass."""
-        self._router.N_traffic_meter = self._router.N_traffic_meter - 1
+        self._router.traffic_meter_entities = self._router.traffic_meter_entities - 1
         await super().async_will_remove_from_hass()

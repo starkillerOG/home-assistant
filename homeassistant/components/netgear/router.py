@@ -126,6 +126,8 @@ class NetgearRouter:
         self.model = None
         self.device_name = None
         self.firmware_version = None
+        self.hardware_version = None
+        self.serial_number = None
 
         self.method_version = 1
         consider_home_int = entry.options.get(
@@ -137,8 +139,8 @@ class NetgearRouter:
         self._attrs = {}
 
         self.devices = {}
-        
-        self.N_traffic_meter = 0
+
+        self.traffic_meter_entities = 0
         self.traffic_data = None
 
     def _setup(self) -> None:
@@ -242,8 +244,10 @@ class NetgearRouter:
 
     async def async_get_traffic_meter(self) -> None:
         """Get the traffic meter data of the router."""
-        if self.N_traffic_meter>0:
-            self.traffic_data = await self.hass.async_add_executor_job(self._api.get_traffic_meter)
+        if self.traffic_meter_entities > 0:
+            self.traffic_data = await self.hass.async_add_executor_job(
+                self._api.get_traffic_meter
+            )
 
     @property
     def signal_device_new(self) -> str:
@@ -315,6 +319,7 @@ class NetgearDeviceEntity(CoordinatorEntity, Entity):
             default_model=self._device["device_model"],
             via_device=(DOMAIN, self._router.unique_id),
         )
+
 
 class NetgearRouterEntity(CoordinatorEntity, Entity):
     """Base class for a Netgear router entity."""
