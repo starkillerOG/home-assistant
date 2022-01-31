@@ -62,11 +62,6 @@ class NetgearAllowBlock(NetgearDeviceEntity, SwitchEntity):
         self.async_update_device()
 
     @property
-    def available(self):
-        """Return true when state is known."""
-        return self._active
-
-    @property
     def is_on(self):
         """Return true if switch is on."""
         return self._state
