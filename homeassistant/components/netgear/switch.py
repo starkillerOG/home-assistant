@@ -1,10 +1,9 @@
 """Support for Netgear switches."""
 import logging
 
-from homeassistant.components.switch import (
-    SwitchEntity,
-    SwitchEntityDescription,
-)
+from pynetgear import ALLOW, BLOCK
+
+from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import EntityCategory
@@ -12,19 +11,18 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .router import NetgearDeviceEntity, NetgearRouter, async_setup_netgear_entry
-from pynetgear import ALLOW, BLOCK
 
 _LOGGER = logging.getLogger(__name__)
 
 
-SWITCH_TYPES = (
-    SwitchDeviceClass(
+SWITCH_TYPES = [
+    SwitchEntityDescription(
         key="allow_or_block",
         name="Allowed on network",
         icon="mdi:block-helper",
         entity_category=EntityCategory.CONFIG,
     )
-)
+]
 
 
 async def async_setup_entry(
@@ -51,7 +49,7 @@ class NetgearAllowBlock(NetgearDeviceEntity, SwitchEntity):
         coordinator: DataUpdateCoordinator,
         router: NetgearRouter,
         device: dict,
-        entity_description: SwitchDeviceClass,
+        entity_description: SwitchEntityDescription,
     ) -> None:
         """Initialize a Netgear device."""
         super().__init__(coordinator, router, device)
@@ -73,11 +71,15 @@ class NetgearAllowBlock(NetgearDeviceEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn the switch on."""
-        await self.hass.async_add_executor_job(self._router.allow_block_device, self._mac, ALLOW)
+        await self.hass.async_add_executor_job(
+            self._router.allow_block_device, self._mac, ALLOW
+        )
 
     async def async_turn_off(self, **kwargs):
         """Turn the switch off."""
-        await self.hass.async_add_executor_job(self._router.allow_block_device, self._mac, BLOCK)
+        await self.hass.async_add_executor_job(
+            self._router.allow_block_device, self._mac, BLOCK
+        )
 
     @callback
     def async_update_device(self) -> None:
