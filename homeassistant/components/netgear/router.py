@@ -206,9 +206,7 @@ class NetgearRouter:
     async def async_get_attached_devices(self) -> list:
         """Get the devices connected to the router."""
         if self.method_version == 1:
-            return await self.hass.async_add_executor_job(
-                self.api.get_attached_devices
-            )
+            return await self.hass.async_add_executor_job(self.api.get_attached_devices)
 
         return await self.hass.async_add_executor_job(self.api.get_attached_devices_2)
 

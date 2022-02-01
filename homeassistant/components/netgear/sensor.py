@@ -117,7 +117,7 @@ SENSOR_TRAFFIC_TYPES = {
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up device tracker for Netgear component."""
+    """Set up sensor for Netgear component."""
 
     def generate_sensor_classes(
         coordinator: DataUpdateCoordinator, router: NetgearRouter, device: dict
