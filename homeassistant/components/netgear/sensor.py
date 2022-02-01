@@ -24,12 +24,14 @@ SENSOR_TYPES = {
         key="type",
         name="link type",
         entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:lan",
     ),
     "link_rate": SensorEntityDescription(
         key="link_rate",
         name="link rate",
         native_unit_of_measurement="Mbps",
         entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:speedometer",
     ),
     "signal": SensorEntityDescription(
         key="signal",
@@ -42,11 +44,13 @@ SENSOR_TYPES = {
         key="ssid",
         name="ssid",
         entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:wifi-marker",
     ),
     "conn_ap_mac": SensorEntityDescription(
         key="conn_ap_mac",
         name="access point mac",
         entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:router-network",
     ),
 }
 
