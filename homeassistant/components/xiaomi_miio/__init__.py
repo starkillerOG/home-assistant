@@ -26,6 +26,7 @@ from miio import (
     FanMiot,
     FanP5,
     FanZA5,
+    PowerStrip,
     RoborockVacuum,
     Timer,
     VacuumStatus,
@@ -84,7 +85,7 @@ GATEWAY_PLATFORMS = [
     Platform.SENSOR,
     Platform.SWITCH,
 ]
-SWITCH_PLATFORMS = [Platform.SWITCH]
+SWITCH_PLATFORMS = [Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR]
 FAN_PLATFORMS = [
     Platform.BINARY_SENSOR,
     Platform.BUTTON,
@@ -103,7 +104,14 @@ HUMIDIFIER_PLATFORMS = [
     Platform.SWITCH,
 ]
 LIGHT_PLATFORMS = [Platform.LIGHT]
-VACUUM_PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.VACUUM]
+VACUUM_PLATFORMS = [
+    Platform.BINARY_SENSOR,
+    Platform.SENSOR,
+    Platform.VACUUM,
+    Platform.BUTTON,
+    Platform.NUMBER,
+    Platform.SELECT,
+]
 AIR_MONITOR_PLATFORMS = [Platform.AIR_QUALITY, Platform.SENSOR]
 
 MODEL_TO_CLASS_MAP = {
@@ -257,7 +265,7 @@ def _async_update_data_vacuum(hass, device: RoborockVacuum):
         async def execute_update():
             async with async_timeout.timeout(POLLING_TIMEOUT_SEC):
                 state = await hass.async_add_executor_job(update)
-                _LOGGER.debug("Got new vacuum state: %s", state)
+                # _LOGGER.debug("Got new vacuum state: %s", state)
                 return state
 
         try:
@@ -291,6 +299,7 @@ async def async_create_miio_device_and_coordinator(
 
     if (
         model not in MODELS_HUMIDIFIER
+        and model not in MODELS_SWITCH
         and model not in MODELS_FAN
         and model not in MODELS_VACUUM
         and not model.startswith(ROBOROCK_GENERIC)
@@ -334,6 +343,8 @@ async def async_create_miio_device_and_coordinator(
         device = MODEL_TO_CLASS_MAP[model](host, token)
     elif model in MODELS_FAN_MIIO:
         device = Fan(host, token, model=model)
+    elif model in PowerStrip.supported_models:
+        device = PowerStrip(host, token, model=model)
     else:
         _LOGGER.error(
             "Unsupported device found! Please create an issue at "

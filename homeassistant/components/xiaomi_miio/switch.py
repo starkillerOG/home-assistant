@@ -106,6 +106,7 @@ from .const import (
 )
 from .device import XiaomiCoordinatedMiioEntity, XiaomiMiioEntity
 from .gateway import XiaomiGatewayDevice
+from .ng_switch import XiaomiSwitch
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -335,7 +336,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up the switch from a config entry."""
     model = config_entry.data[CONF_MODEL]
-    if model in (*MODELS_HUMIDIFIER, *MODELS_FAN):
+    # TODO: convert all entities to be coordinated ones
+    if model in (*MODELS_HUMIDIFIER, *MODELS_FAN, *PowerStrip.supported_models):
         await async_setup_coordinated_entry(hass, config_entry, async_add_entities)
     else:
         await async_setup_other_entry(hass, config_entry, async_add_entities)
@@ -376,6 +378,10 @@ async def async_setup_coordinated_entry(hass, config_entry, async_add_entities):
                     description,
                 )
             )
+
+    # Handle switches defined by the backing class.
+    for switch in device.switches():
+        entities.append(XiaomiSwitch(device, switch, config_entry, coordinator))
 
     async_add_entities(entities)
 
@@ -433,10 +439,17 @@ async def async_setup_other_entry(hass, config_entry, async_add_entities):
                 )
                 entities.append(device)
                 hass.data[DATA_KEY][host] = device
-        elif model in ["qmi.powerstrip.v1", "zimi.powerstrip.v2"]:
+        elif model in [
+            "qmi.powerstrip.v1",
+            "zimi.powerstrip.v2",
+        ]:  # TODO moved to be a coordinated..
             plug = PowerStrip(host, token, model=model)
             device = XiaomiPowerStripSwitch(name, plug, config_entry, unique_id)
             entities.append(device)
+
+            for switch in device.switches():
+                print("XIAOMISWITCH %s" % switch)
+
             hass.data[DATA_KEY][host] = device
         elif model in [
             "chuangmi.plug.m1",

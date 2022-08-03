@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+from homeassistant.components.number import NumberEntity, NumberEntityDescription
+from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
+from homeassistant.core import callback
+from homeassistant.helpers.entity import EntityCategory
+from homeassistant.util import slugify
+
+
+class XiaomiNumber(XiaomiCoordinatedMiioEntity, NumberEntity):
+    """Representation of a generic Xiaomi attribute selector."""
+
+    def __init__(self, device, setting, entry, coordinator):
+        """Initialize the generic Xiaomi attribute selector."""
+        self._name = name = setting.name
+        unique_id = f"{entry.unique_id}_{slugify(name)}"
+        self._setter = setting.setter
+
+        super().__init__(device, entry, unique_id, coordinator)
+
+        self._attr_native_value = self._extract_value_from_attribute(
+            coordinator.data, setting.id
+        )
+        description = NumberEntityDescription(
+            key=setting.id,
+            name=setting.name,
+            icon=setting.icon,
+            native_unit_of_measurement=setting.unit,
+            native_min_value=setting.min_value,
+            native_max_value=setting.max_value,
+            native_step=setting.step,
+            entity_category=EntityCategory.CONFIG,
+        )
+
+        self.entity_description = description
+
+    @property
+    def available(self):
+        """Return the number controller availability."""
+        # TODO: enable available_with_device_off
+        # if (
+        #    super().available
+        #    and not self.coordinator.data.is_on
+        #    and not self.entity_description.available_with_device_off
+        # ):
+        #    return False
+        return super().available
+
+    async def async_set_native_value(self, value):
+        """Set an option of the miio device."""
+        if await self._try_command("Turning %s on failed", self._setter, int(value)):
+            self._attr_native_value = value
+            self.async_write_ha_state()
+
+    @callback
+    def _handle_coordinator_update(self):
+        """Fetch state from the device."""
+        # On state change the device doesn't provide the new state immediately.
+        self._attr_native_value = self._extract_value_from_attribute(
+            self.coordinator.data, self.entity_description.key
+        )
+        self.async_write_ha_state()

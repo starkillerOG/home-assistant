@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
+import logging
 
 from miio import Device
 
@@ -81,6 +82,7 @@ from .const import (
     MODELS_PURIFIER_MIOT,
 )
 from .device import XiaomiCoordinatedMiioEntity
+from .ng_number import XiaomiNumber
 
 ATTR_DELAY_OFF_COUNTDOWN = "delay_off_countdown"
 ATTR_FAN_LEVEL = "fan_level"
@@ -91,6 +93,9 @@ ATTR_LED_BRIGHTNESS_LEVEL = "led_brightness_level"
 ATTR_MOTOR_SPEED = "motor_speed"
 ATTR_OSCILLATION_ANGLE = "angle"
 ATTR_VOLUME = "volume"
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -277,6 +282,7 @@ async def async_setup_entry(
         return
     model = config_entry.data[CONF_MODEL]
     device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
+    coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
 
     if model in MODEL_TO_FEATURES_MAP:
         features = MODEL_TO_FEATURES_MAP[model]
@@ -285,7 +291,7 @@ async def async_setup_entry(
     elif model in MODELS_PURIFIER_MIOT:
         features = FEATURE_FLAGS_AIRPURIFIER_MIOT
     else:
-        return
+        features = 0
 
     for feature, description in NUMBER_TYPES.items():
         if feature == FEATURE_SET_LED_BRIGHTNESS and model != MODEL_FAN_ZA5:
@@ -323,10 +329,18 @@ async def async_setup_entry(
                     device,
                     config_entry,
                     f"{description.key}_{config_entry.unique_id}",
-                    hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR],
+                    coordinator,
                     description,
                 )
             )
+
+    # Handle switches defined by the backing class.
+    for setting in device.settings():
+        from miio.descriptors import NumberSettingDescriptor, SettingType
+
+        if setting.type == SettingType.Number:
+            _LOGGER.error("Adding new setting: %s", setting)
+            entities.append(XiaomiNumber(device, setting, config_entry, coordinator))
 
     async_add_entities(entities)
 

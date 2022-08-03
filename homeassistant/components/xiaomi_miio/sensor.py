@@ -679,11 +679,17 @@ def _setup_vacuum_sensors(hass, config_entry, async_add_entities):
 
     for sensor, description in VACUUM_SENSORS.items():
         parent_key_data = getattr(coordinator.data, description.parent_key)
-        if getattr(parent_key_data, description.key, None) is None:
-            _LOGGER.debug(
-                "It seems the %s does not support the %s as the initial value is None",
-                config_entry.data[CONF_MODEL],
-                description.key,
+        try:
+            if getattr(parent_key_data, description.key, None) is None:
+                _LOGGER.debug(
+                    "It seems the %s does not support the %s as the initial value is None",
+                    config_entry.data[CONF_MODEL],
+                    description.key,
+                )
+                continue
+        except KeyError:
+            _LOGGER.error(
+                "Unable to read %s from %s", description.key, description.parent_key
             )
             continue
         entities.append(
@@ -741,6 +747,8 @@ async def async_setup_entry(
         host = config_entry.data[CONF_HOST]
         token = config_entry.data[CONF_TOKEN]
         model: str = config_entry.data[CONF_MODEL]
+        coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
+        device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
 
         if model in (MODEL_FAN_ZA1, MODEL_FAN_ZA3, MODEL_FAN_ZA4, MODEL_FAN_P5):
             return
@@ -758,7 +766,7 @@ async def async_setup_entry(
                 )
             )
         else:
-            device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
+
             sensors: Iterable[str] = []
             if model in MODEL_TO_SENSORS_MAP:
                 sensors = MODEL_TO_SENSORS_MAP[model]
@@ -777,7 +785,8 @@ async def async_setup_entry(
                 or model.startswith(ROBOROCK_GENERIC)
                 or model.startswith(ROCKROBO_GENERIC)
             ):
-                return _setup_vacuum_sensors(hass, config_entry, async_add_entities)
+                # TODO: this should be removed..
+                _setup_vacuum_sensors(hass, config_entry, async_add_entities)
 
             for sensor, description in SENSOR_TYPES.items():
                 if sensor not in sensors:
@@ -791,6 +800,17 @@ async def async_setup_entry(
                         description,
                     )
                 )
+
+        # Setup next-gen sensors
+        from .ng_sensor import XiaomiSensor
+
+        for sensor in device.sensors():
+            if sensor.type == "sensor":
+                if getattr(coordinator.data, sensor.property) is None:
+                    _LOGGER.debug("Skipping %s as it's value was None", sensor.property)
+                    continue
+
+                entities.append(XiaomiSensor(device, sensor, config_entry, coordinator))
 
     async_add_entities(entities)
 
