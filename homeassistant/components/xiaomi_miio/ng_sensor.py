@@ -39,10 +39,10 @@ class XiaomiSensor(XiaomiCoordinatedMiioEntity, SensorEntity):
             key=sensor.id,
             name=sensor.name,
             native_unit_of_measurement=sensor.unit,
-            icon=sensor.icon,
-            # TODO: add state/category to python-miio?
-            # state_class = sensor.metaSensorStateClass.MEASUREMENT,
-            # entity_category = EntityCategory.DIAGNOSTIC,
+            icon=sensor.extras.get("icon"),
+            device_class=sensor.extras.get("device_class"),
+            state_class=sensor.extras.get("state_class"),
+            entity_category=sensor.extras.get("entity_category"),
         )
         _LOGGER.error("Adding sensor: %s", description)
         super().__init__(device, entry, unique_id, coordinator)

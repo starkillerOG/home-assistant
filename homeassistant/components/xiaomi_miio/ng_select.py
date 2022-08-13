@@ -10,6 +10,7 @@ from homeassistant.util import slugify
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
     """Representation of a generic Xiaomi attribute selector."""
 
@@ -23,7 +24,9 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
 
         super().__init__(device, entry, unique_id, coordinator)
         self._choices = setting.choices
-        self._attr_current_option = None  # TODO we don't know the value, but the parent wants it?
+        self._attr_current_option = (
+            None  # TODO we don't know the value, but the parent wants it?
+        )
 
         self.entity_description = SelectEntityDescription(
             key=setting.id,
@@ -46,7 +49,7 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
             try:
                 self._attr_current_option = self._choices(value).name
             except:
-
+                pass
             finally:
                 _LOGGER.error("New select value: %s", self._attr_current_option)
                 self.async_write_ha_state()

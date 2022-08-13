@@ -40,7 +40,11 @@ class XiaomiBinarySensor(XiaomiCoordinatedMiioEntity, BinarySensorEntity):
         super().__init__(device, entry, unique_id, coordinator)
 
         description = XiaomiBinarySensorDescription(
-            key=sensor.id, name=sensor.name, icon=sensor.icon
+            key=sensor.id,
+            name=sensor.name,
+            icon=sensor.extras.get("icon"),
+            device_class=sensor.extras.get("device_class"),
+            entity_category=sensor.extras.get("entity_category"),
         )
 
         self.entity_description = description

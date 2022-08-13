@@ -164,10 +164,10 @@ def _setup_vacuum_sensors(hass, config_entry, async_add_entities):
             )
         )
 
-    for sensor in device.sensors():
+    for sensor in device.sensors().values():
         if sensor.type == "binary":
-            if getattr(coordinator.data.status, sensor.property) is None:
-                _LOGGER.debug("Skipping %s as it's value was None", sensor.property)
+            if getattr(coordinator.data.status, sensor.id) is None:
+                _LOGGER.debug("Skipping %s as it's value was None", sensor.id)
                 continue
 
             entities.append(
@@ -218,7 +218,7 @@ async def async_setup_entry(
         if model not in MODELS_VACUUM:
             device = hass.data[DOMAIN][config_entry.entry_id].get(KEY_DEVICE)
             coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
-            for sensor in device.sensors():
+            for sensor in device.sensors().values():
                 if sensor.type == "binary":
                     if getattr(coordinator.data, sensor.property) is None:
                         _LOGGER.debug(

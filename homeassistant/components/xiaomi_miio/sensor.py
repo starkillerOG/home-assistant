@@ -804,7 +804,7 @@ async def async_setup_entry(
         # Setup next-gen sensors
         from .ng_sensor import XiaomiSensor
 
-        for sensor in device.sensors():
+        for sensor in device.sensors().values():
             if sensor.type == "sensor":
                 if getattr(coordinator.data, sensor.property) is None:
                     _LOGGER.debug("Skipping %s as it's value was None", sensor.property)

@@ -447,9 +447,6 @@ async def async_setup_other_entry(hass, config_entry, async_add_entities):
             device = XiaomiPowerStripSwitch(name, plug, config_entry, unique_id)
             entities.append(device)
 
-            for switch in device.switches():
-                print("XIAOMISWITCH %s" % switch)
-
             hass.data[DATA_KEY][host] = device
         elif model in [
             "chuangmi.plug.m1",
