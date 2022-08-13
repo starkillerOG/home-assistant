@@ -380,7 +380,7 @@ async def async_setup_coordinated_entry(hass, config_entry, async_add_entities):
             )
 
     # Handle switches defined by the backing class.
-    for switch in device.switches():
+    for switch in device.switches().values():
         entities.append(XiaomiSwitch(device, switch, config_entry, coordinator))
 
     async_add_entities(entities)

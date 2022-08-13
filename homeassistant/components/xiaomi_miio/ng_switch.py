@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import logging
+
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
 from homeassistant.core import callback
 from homeassistant.util import slugify
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class XiaomiSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
@@ -24,8 +28,12 @@ class XiaomiSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
         description = SwitchEntityDescription(
             key=switch.id,
             name=name,
-            icon=switch.icon,
+            icon=switch.extras.get("icon"),
+            device_class=switch.extras.get("device_class"),
+            entity_category=switch.extras.get("entity_category"),
         )
+
+        _LOGGER.error("Adding switch: %s", description)
 
         self._attr_is_on = self._extract_value_from_attribute(
             self.coordinator.data, description.key
@@ -39,6 +47,7 @@ class XiaomiSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
         self._attr_is_on = self._extract_value_from_attribute(
             self.coordinator.data, self.entity_description.key
         )
+        _LOGGER.error("Got switch update: %s", self._attr_is_on)
         self.async_write_ha_state()
 
     @property
