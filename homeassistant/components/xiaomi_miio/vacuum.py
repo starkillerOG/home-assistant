@@ -25,7 +25,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import as_utc
 
-from . import VacuumCoordinatorData
+from ...helpers.update_coordinator import DataUpdateCoordinator
 from .const import (
     CONF_DEVICE,
     CONF_FLOW_TYPE,
@@ -180,7 +180,7 @@ async def async_setup_entry(
 
 
 class MiroboVacuum(
-    XiaomiCoordinatedMiioEntity[DataUpdateCoordinator[VacuumCoordinatorData]],
+    XiaomiCoordinatedMiioEntity[DataUpdateCoordinator],
     StateVacuumEntity,
 ):
     """Representation of a Xiaomi Vacuum cleaner robot."""
@@ -203,10 +203,14 @@ class MiroboVacuum(
         device,
         entry,
         unique_id,
-        coordinator: DataUpdateCoordinator[VacuumCoordinatorData],
+        coordinator: DataUpdateCoordinator,
     ):
         """Initialize the Xiaomi vacuum cleaner robot handler."""
         super().__init__(device, entry, unique_id, coordinator)
+        self._fan_speed_presets = device.fan_speed_presets()
+        self._fan_speed_presets_reverse = {
+            speed: name for name, speed in self._fan_speed_presets.items()
+        }
         self._state: str | None = None
 
     async def async_added_to_hass(self) -> None:
@@ -219,7 +223,7 @@ class MiroboVacuum(
         """Return the status of the vacuum cleaner."""
         # The vacuum reverts back to an idle state after erroring out.
         # We want to keep returning an error until it has been cleared.
-        if self.coordinator.data.status.got_error:
+        if self.coordinator.data.got_error:
             return STATE_ERROR
 
         return self._state
@@ -227,29 +231,23 @@ class MiroboVacuum(
     @property
     def battery_level(self) -> int:
         """Return the battery level of the vacuum cleaner."""
-        return self.coordinator.data.status.battery
+        return self.coordinator.data.battery
 
     @property
     def fan_speed(self) -> str:
         """Return the fan speed of the vacuum cleaner."""
-        speed = self.coordinator.data.status.fanspeed
-        if speed in self.coordinator.data.fan_speeds_reverse:
-            return self.coordinator.data.fan_speeds_reverse[speed]
-
-        _LOGGER.debug("Unable to find reverse for %s", speed)
-
-        return str(speed)
+        speed = self.coordinator.data.fanspeed
+        return self._fan_speed_presets_reverse.get(speed, "Custom")
 
     @property
     def fan_speed_list(self) -> list[str]:
         """Get the list of available fan speed steps of the vacuum cleaner."""
-        if speed_list := self.coordinator.data.fan_speeds:
-            return list(speed_list)
-        return []
+        return list(self._fan_speed_presets)
 
     @property
     def timers(self) -> list[dict[str, Any]]:
         """Get the list of added timers of the vacuum cleaner."""
+        return []
         return [
             {
                 "enabled": timer.enabled,
@@ -263,10 +261,10 @@ class MiroboVacuum(
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the specific state attributes of this vacuum cleaner."""
         attrs: dict[str, Any] = {}
-        attrs[ATTR_STATUS] = str(self.coordinator.data.status.state)
+        attrs[ATTR_STATUS] = str(self.coordinator.data.state)
 
-        if self.coordinator.data.status.got_error:
-            attrs[ATTR_ERROR] = self.coordinator.data.status.error
+        if self.coordinator.data.got_error:
+            attrs[ATTR_ERROR] = self.coordinator.data.error
 
         if self.timers:
             attrs[ATTR_TIMERS] = self.timers
@@ -298,8 +296,11 @@ class MiroboVacuum(
 
     async def async_set_fan_speed(self, fan_speed: str, **kwargs: Any) -> None:
         """Set fan speed."""
-        if fan_speed in self.coordinator.data.fan_speeds:
-            fan_speed_int = self.coordinator.data.fan_speeds[fan_speed]
+        # TODO: I don't see any reason this not being simply the following
+        # fan_speed = self._fan_speed_presets.get(fan_speed, int(fan_speed))
+
+        if fan_speed in self._fan_speed_presets:
+            fan_speed_int = self._fan_speed_presets[fan_speed]
         else:
             try:
                 fan_speed_int = int(fan_speed)
@@ -408,12 +409,12 @@ class MiroboVacuum(
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        state_code = int(self.coordinator.data.status.state_code)
+        state_code = int(self.coordinator.data.state_code)
         if state_code not in STATE_CODE_TO_STATE:
             _LOGGER.error(
                 "STATE not supported: %s, state_code: %s",
-                self.coordinator.data.status.state,
-                self.coordinator.data.status.state_code,
+                self.coordinator.data.state,
+                self.coordinator.data.state_code,
             )
             self._state = None
         else:

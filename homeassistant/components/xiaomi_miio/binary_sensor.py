@@ -183,7 +183,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Xiaomi sensor from a config entry."""
-    entities = []
+    entities: List[Union[XiaomiGenericBinarySensor, XiaomiBinarySensor] = []
 
     if config_entry.data[CONF_FLOW_TYPE] == CONF_DEVICE:
         model = config_entry.data[CONF_MODEL]
@@ -199,7 +199,8 @@ async def async_setup_entry(
         elif model in MODELS_HUMIDIFIER_MJJSQ:
             sensors = HUMIDIFIER_MJJSQ_BINARY_SENSORS
         elif model in MODELS_VACUUM:
-            return _setup_vacuum_sensors(hass, config_entry, async_add_entities)
+            pass  # TODO: skip setting up custom sensors for now
+            # return _setup_vacuum_sensors(hass, config_entry, async_add_entities)
 
         for description in BINARY_SENSOR_TYPES:
             if description.key not in sensors:
@@ -214,21 +215,17 @@ async def async_setup_entry(
                 )
             )
 
-        # TODO we need separate handling until vacuum gets converted
-        if model not in MODELS_VACUUM:
-            device = hass.data[DOMAIN][config_entry.entry_id].get(KEY_DEVICE)
-            coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
-            for sensor in device.sensors().values():
-                if sensor.type == "binary":
-                    if getattr(coordinator.data, sensor.property) is None:
-                        _LOGGER.debug(
-                            "Skipping %s as it's value was None", sensor.property
-                        )
-                        continue
+        device = hass.data[DOMAIN][config_entry.entry_id].get(KEY_DEVICE)
+        coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
+        for sensor in device.sensors().values():
+            if sensor.type == "binary":
+                if getattr(coordinator.data, sensor.property) is None:
+                    _LOGGER.debug("Skipping %s as it's value was None", sensor.property)
+                    continue
 
-                    entities.append(
-                        XiaomiBinarySensor(device, sensor, config_entry, coordinator)
-                    )
+                entities.append(
+                    XiaomiBinarySensor(device, sensor, config_entry, coordinator)
+                )
 
     async_add_entities(entities)
 

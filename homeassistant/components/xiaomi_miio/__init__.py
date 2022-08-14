@@ -336,8 +336,9 @@ async def async_create_miio_device_and_coordinator(
         or model.startswith(ROCKROBO_GENERIC)
     ):
         device = RoborockVacuum(host, token)
-        update_method = _async_update_data_vacuum
-        coordinator_class = DataUpdateCoordinator[VacuumCoordinatorData]
+        # TODO: disable special handling, to be removed later on
+        # update_method = _async_update_data_vacuum
+        # coordinator_class = DataUpdateCoordinator[VacuumCoordinatorData]
     # Pedestal fans
     elif model in MODEL_TO_CLASS_MAP:
         device = MODEL_TO_CLASS_MAP[model](host, token)

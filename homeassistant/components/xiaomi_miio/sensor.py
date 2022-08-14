@@ -785,8 +785,9 @@ async def async_setup_entry(
                 or model.startswith(ROBOROCK_GENERIC)
                 or model.startswith(ROCKROBO_GENERIC)
             ):
-                # TODO: this should be removed..
-                _setup_vacuum_sensors(hass, config_entry, async_add_entities)
+                # TODO: skip special handling for vacuum sensors for now
+                pass
+                # _setup_vacuum_sensors(hass, config_entry, async_add_entities)
 
             for sensor, description in SENSOR_TYPES.items():
                 if sensor not in sensors:
