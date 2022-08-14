@@ -33,9 +33,7 @@ class XiaomiBinarySensor(XiaomiCoordinatedMiioEntity, BinarySensorEntity):
         """Initialize the entity."""
         self._name = name = sensor.name
         self._property = sensor.property
-        from homeassistant.util import slugify
-
-        unique_id = f"{entry.unique_id}_binarysensor_{slugify(name)}"
+        unique_id = f"{entry.unique_id}_binarysensor_{sensor.id}"
 
         super().__init__(device, entry, unique_id, coordinator)
 

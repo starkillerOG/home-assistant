@@ -4,7 +4,6 @@ from homeassistant.components.number import NumberEntity, NumberEntityDescriptio
 from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
 from homeassistant.core import callback
 from homeassistant.helpers.entity import EntityCategory
-from homeassistant.util import slugify
 
 
 class XiaomiNumber(XiaomiCoordinatedMiioEntity, NumberEntity):
@@ -13,7 +12,7 @@ class XiaomiNumber(XiaomiCoordinatedMiioEntity, NumberEntity):
     def __init__(self, device, setting, entry, coordinator):
         """Initialize the generic Xiaomi attribute selector."""
         self._name = name = setting.name
-        unique_id = f"{entry.unique_id}_{slugify(name)}"
+        unique_id = f"{entry.unique_id}_number_{setting.id}"
         self._setter = setting.setter
 
         super().__init__(device, entry, unique_id, coordinator)

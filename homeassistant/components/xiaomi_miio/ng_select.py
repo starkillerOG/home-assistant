@@ -19,7 +19,7 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
     def __init__(self, device, setting, entry, coordinator):
         """Initialize the generic Xiaomi attribute selector."""
         self._name = name = setting.name
-        unique_id = f"{entry.unique_id}_{slugify(name)}"
+        unique_id = f"{entry.unique_id}_select_{setting.id}"
         self._setter = setting.setter
 
         super().__init__(device, entry, unique_id, coordinator)
@@ -50,6 +50,7 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
             try:
                 self._attr_current_option = self._choices(value).name
             except:
+                self._attr_current_option = "Unknown"
                 pass
             finally:
                 _LOGGER.error("New select value: %s", self._attr_current_option)
@@ -57,8 +58,9 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Set an option of the miio device."""
+        _LOGGER.debug("Setting select value to: %s", option)
         if await self._try_command(
-            "Setting the led brightness of the miio device failed.",
+            "Setting the select value failed",
             self._setter,
             self._choices[option].value,
         ):

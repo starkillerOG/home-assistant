@@ -20,12 +20,12 @@ class XiaomiButton(XiaomiCoordinatedMiioEntity, ButtonEntity):
     def __init__(self, button, device, entry, coordinator):
         """Initialize the plug switch."""
         self._name = name = button.name
-        unique_id = f"{entry.unique_id}_{slugify(name)}"
+        unique_id = f"{entry.unique_id}_button_{button.id}"
         self.method = button.method
 
         super().__init__(device, entry, unique_id, coordinator)
         description = ButtonEntityDescription(
-            key=slugify(name),
+            key=button.id,
             name=button.name,
             icon=button.extras.get("icon"),
             device_class=button.extras.get("device_class"),

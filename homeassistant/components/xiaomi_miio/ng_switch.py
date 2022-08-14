@@ -5,7 +5,6 @@ import logging
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
 from homeassistant.core import callback
-from homeassistant.util import slugify
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,8 +20,8 @@ class XiaomiSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
         self._name = name = switch.name
         self._property = switch.property
         self._setter = switch.setter
+        unique_id = f"{entry.unique_id}_switch_{switch.id}"
 
-        unique_id = f"{entry.unique_id}_switch_{slugify(name)}"
         super().__init__(device, entry, unique_id, coordinator)
 
         description = SwitchEntityDescription(

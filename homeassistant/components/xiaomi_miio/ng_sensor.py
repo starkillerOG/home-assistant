@@ -31,9 +31,8 @@ class XiaomiSensor(XiaomiCoordinatedMiioEntity, SensorEntity):
         """Initialize the entity."""
         self._name = name = sensor.name
         self._property = sensor.property
-        from homeassistant.util import slugify
 
-        unique_id = f"{entry.unique_id}_sensor_{slugify(name)}"
+        unique_id = f"{entry.unique_id}_sensor_{sensor.id}"
 
         description = XiaomiMiioSensorDescription(
             key=sensor.id,
