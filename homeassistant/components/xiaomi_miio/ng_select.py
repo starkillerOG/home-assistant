@@ -31,9 +31,10 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
         self.entity_description = SelectEntityDescription(
             key=setting.id,
             name=setting.name,
-            icon=setting.icon,
-            # device_class="xiaomi_miio__led_brightness",
-            entity_category=EntityCategory.CONFIG,
+            icon=setting.extras.get("icon"),
+            device_class=setting.extras.get("device_class"),
+            entity_category=setting.extras.get("entity_category"),
+            # entity_category=EntityCategory.CONFIG,
         )
         self._attr_options = [x.name for x in self._choices]
 

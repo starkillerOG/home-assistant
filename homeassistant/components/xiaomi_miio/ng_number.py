@@ -24,12 +24,14 @@ class XiaomiNumber(XiaomiCoordinatedMiioEntity, NumberEntity):
         description = NumberEntityDescription(
             key=setting.id,
             name=setting.name,
-            icon=setting.icon,
+            icon=setting.extras.get("icon"),
+            device_class=setting.extras.get("device_class"),
+            entity_category=setting.extras.get("entity_category"),
+            # entity_category=EntityCategory.CONFIG,
             native_unit_of_measurement=setting.unit,
             native_min_value=setting.min_value,
             native_max_value=setting.max_value,
             native_step=setting.step,
-            entity_category=EntityCategory.CONFIG,
         )
 
         self.entity_description = description

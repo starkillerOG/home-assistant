@@ -27,8 +27,9 @@ class XiaomiButton(XiaomiCoordinatedMiioEntity, ButtonEntity):
         description = ButtonEntityDescription(
             key=slugify(name),
             name=button.name,
-            icon=button.icon,
-            entity_category=None,
+            icon=button.extras.get("icon"),
+            device_class=button.extras.get("device_class"),
+            entity_category=button.extras.get("entity_category"),
         )
 
         self.entity_description = description
