@@ -335,7 +335,7 @@ async def async_setup_entry(
             )
 
     # Handle switches defined by the backing class.
-    for setting in device.settings():
+    for setting in device.settings().values():
         from miio.descriptors import NumberSettingDescriptor, SettingType
 
         if setting.type == SettingType.Number:

@@ -206,7 +206,7 @@ async def async_setup_entry(
 
     from miio.descriptors import SettingType
 
-    for setting in device.settings():
+    for setting in device.settings().values():
         if setting.type == SettingType.Enum:
             _LOGGER.error("Adding new select: %s", setting)
             entities.append(XiaomiSelect(device, setting, config_entry, coordinator))
