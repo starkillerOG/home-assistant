@@ -1,9 +1,9 @@
+"""Support for Xiaomi Miio number entities."""
 from __future__ import annotations
 
 from homeassistant.components.number import NumberEntity, NumberEntityDescription
 from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
 from homeassistant.core import callback
-from homeassistant.helpers.entity import EntityCategory
 
 
 class XiaomiNumber(XiaomiCoordinatedMiioEntity, NumberEntity):
@@ -11,7 +11,7 @@ class XiaomiNumber(XiaomiCoordinatedMiioEntity, NumberEntity):
 
     def __init__(self, device, setting, entry, coordinator):
         """Initialize the generic Xiaomi attribute selector."""
-        self._name = name = setting.name
+        self._name = setting.name
         unique_id = f"{entry.unique_id}_number_{setting.id}"
         self._setter = setting.setter
 
@@ -34,18 +34,6 @@ class XiaomiNumber(XiaomiCoordinatedMiioEntity, NumberEntity):
         )
 
         self.entity_description = description
-
-    @property
-    def available(self):
-        """Return the number controller availability."""
-        # TODO: enable available_with_device_off
-        # if (
-        #    super().available
-        #    and not self.coordinator.data.is_on
-        #    and not self.entity_description.available_with_device_off
-        # ):
-        #    return False
-        return super().available
 
     async def async_set_native_value(self, value):
         """Set an option of the miio device."""

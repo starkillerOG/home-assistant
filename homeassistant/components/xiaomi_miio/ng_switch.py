@@ -1,3 +1,4 @@
+"""Support for Xiaomi Miio switch entities."""
 from __future__ import annotations
 
 import logging
@@ -32,7 +33,7 @@ class XiaomiSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
             entity_category=switch.extras.get("entity_category"),
         )
 
-        _LOGGER.error("Adding switch: %s", description)
+        _LOGGER.debug("Adding switch: %s", description)
 
         self._attr_is_on = self._extract_value_from_attribute(
             self.coordinator.data, description.key
@@ -46,22 +47,8 @@ class XiaomiSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
         self._attr_is_on = self._extract_value_from_attribute(
             self.coordinator.data, self.entity_description.key
         )
-        _LOGGER.error("Got switch update: %s", self._attr_is_on)
+        _LOGGER.debug("Got update: %s", self)
         self.async_write_ha_state()
-
-    @property
-    def available(self):
-        """Return true when state is known."""
-        """
-        # TODO re-enable availability checks, requires metadata from python-miio
-        if (
-            super().available
-            and not self.coordinator.data.is_on
-            and not self.entity_description.available_with_device_off
-        ):
-            return False
-        """
-        return super().available
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn on an option of the miio device."""

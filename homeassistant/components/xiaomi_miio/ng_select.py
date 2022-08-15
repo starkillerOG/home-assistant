@@ -1,3 +1,4 @@
+"""Support for Xiaomi Miio select entities."""
 from __future__ import annotations
 
 import logging
@@ -5,8 +6,6 @@ import logging
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
 from homeassistant.core import callback
-from homeassistant.helpers.entity import EntityCategory
-from homeassistant.util import slugify
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
 
     def __init__(self, device, setting, entry, coordinator):
         """Initialize the generic Xiaomi attribute selector."""
-        self._name = name = setting.name
+        self._name = setting.name
         unique_id = f"{entry.unique_id}_select_{setting.id}"
         self._setter = setting.setter
 
@@ -49,11 +48,10 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
         if value is not None:
             try:
                 self._attr_current_option = self._choices(value).name
-            except:
+            except ValueError:
                 self._attr_current_option = "Unknown"
-                pass
             finally:
-                _LOGGER.error("New select value: %s", self._attr_current_option)
+                _LOGGER.debug("Got update: %s", self)
                 self.async_write_ha_state()
 
     async def async_select_option(self, option: str) -> None:

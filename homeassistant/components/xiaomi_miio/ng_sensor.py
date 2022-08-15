@@ -1,3 +1,4 @@
+"""Support for Xiaomi Miio sensor entities."""
 from __future__ import annotations
 
 import logging
@@ -29,7 +30,7 @@ class XiaomiSensor(XiaomiCoordinatedMiioEntity, SensorEntity):
         coordinator,
     ):
         """Initialize the entity."""
-        self._name = name = sensor.name
+        self._name = sensor.name
         self._property = sensor.property
 
         unique_id = f"{entry.unique_id}_sensor_{sensor.id}"
@@ -43,7 +44,7 @@ class XiaomiSensor(XiaomiCoordinatedMiioEntity, SensorEntity):
             state_class=sensor.extras.get("state_class"),
             entity_category=sensor.extras.get("entity_category"),
         )
-        _LOGGER.error("Adding sensor: %s", description)
+        _LOGGER.debug("Adding sensor: %s", description)
         super().__init__(device, entry, unique_id, coordinator)
         self.entity_description = description
         self._attr_native_value = self._determine_native_value()
@@ -54,7 +55,7 @@ class XiaomiSensor(XiaomiCoordinatedMiioEntity, SensorEntity):
         native_value = self._determine_native_value()
         # Sometimes (quite rarely) the device returns None as the sensor value so we
         # check that the value is not None before updating the state.
-        _LOGGER.error("Got update for %s: %s", self, native_value)
+        _LOGGER.debug("Got update: %s", self)
         if native_value is not None:
             self._attr_native_value = native_value
             self._attr_available = True

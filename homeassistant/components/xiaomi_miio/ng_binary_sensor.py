@@ -1,3 +1,4 @@
+"""Support for Xiaomi Miio binary sensors."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -5,7 +6,6 @@ import logging
 from typing import Callable
 
 from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -31,7 +31,7 @@ class XiaomiBinarySensor(XiaomiCoordinatedMiioEntity, BinarySensorEntity):
 
     def __init__(self, device, sensor, entry, coordinator):
         """Initialize the entity."""
-        self._name = name = sensor.name
+        self._name = sensor.name
         self._property = sensor.property
         unique_id = f"{entry.unique_id}_binarysensor_{sensor.id}"
 
@@ -49,17 +49,7 @@ class XiaomiBinarySensor(XiaomiCoordinatedMiioEntity, BinarySensorEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        try:
-            self._attr_is_on = bool(getattr(self.coordinator.data, self._property))
-        except AttributeError as ex:
-            # TODO: ugly fallback to custom vacuum container
-            self._attr_is_on = bool(
-                getattr(self.coordinator.data.status, self._property)
-            )
-
-        self._attr_available = (
-            self._attr_is_on is not None
-        )  # this is necessary to get the values displayed
-        _LOGGER.error("Got an update for %s", self)
+        self._attr_is_on = bool(getattr(self.coordinator.data, self._property))
+        _LOGGER.debug("Got update: %s", self)
 
         super()._handle_coordinator_update()

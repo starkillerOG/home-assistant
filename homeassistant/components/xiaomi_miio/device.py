@@ -159,24 +159,7 @@ class XiaomiCoordinatedMiioEntity(CoordinatorEntity[_T]):
 
     @classmethod
     def _extract_value_from_attribute(cls, state, attribute):
-        # TODO handle all VacuumCoordinatorData as it were a single dict..
-        # TODO this hack needs to be removed by exposing all information through vacuum implementation
-        from . import VacuumCoordinatorData
-
-        if isinstance(state, VacuumCoordinatorData):
-            for name in [
-                "status",
-                "dnd_status",
-                "last_clean_details",
-                "consumable_status",
-            ]:
-                try:
-                    sub_container = getattr(state, name)
-                    value = getattr(sub_container, attribute)
-                except:
-                    pass
-        else:
-            value = getattr(state, attribute)
+        value = getattr(state, attribute)
 
         if isinstance(value, Enum):
             return value.value
