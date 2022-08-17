@@ -60,7 +60,7 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
         if await self._try_command(
             "Setting the select value failed",
             self._setter,
-            self._choices[option].value,
+            self._choices[option],
         ):
             self._attr_current_option = option
             self.async_write_ha_state()
