@@ -140,12 +140,13 @@ class RestUpdateEntity(ShellyRestAttributeEntity, UpdateEntity):
 
     def __init__(
         self,
-        wrapper: BlockDeviceWrapper,
+        wrapper: ShellyDeviceRestWrapper,
+        block_wrapper: BlockDeviceWrapper,
         attribute: str,
         description: RestEntityDescription,
     ) -> None:
         """Initialize update entity."""
-        super().__init__(wrapper, attribute, description)
+        super().__init__(wrapper, block_wrapper, attribute, description)
         self._in_progress_old_version: str | None = None
 
     @property
@@ -177,12 +178,8 @@ class RestUpdateEntity(ShellyRestAttributeEntity, UpdateEntity):
         self, version: str | None, backup: bool, **kwargs: Any
     ) -> None:
         """Install the latest firmware version."""
-        config_entry = self.wrapper.entry
-        block_wrapper = self.hass.data[DOMAIN][DATA_CONFIG_ENTRY][
-            config_entry.entry_id
-        ].get(BLOCK)
         self._in_progress_old_version = self.installed_version
-        await self.entity_description.install(block_wrapper)
+        await self.entity_description.install(self.block_wrapper)
 
 
 class RpcUpdateEntity(ShellyRpcAttributeEntity, UpdateEntity):
