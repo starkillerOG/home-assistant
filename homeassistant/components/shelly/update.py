@@ -18,10 +18,11 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import BlockDeviceWrapper, RpcDeviceWrapper
-from .const import BLOCK, CONF_SLEEP_PERIOD, DATA_CONFIG_ENTRY, DOMAIN
+from .const import CONF_SLEEP_PERIOD
 from .entity import (
     RestEntityDescription,
     RpcEntityDescription,
+    ShellyDeviceRestWrapper,
     ShellyRestAttributeEntity,
     ShellyRpcAttributeEntity,
     async_setup_entry_rest,
