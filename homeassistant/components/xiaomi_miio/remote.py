@@ -5,7 +5,6 @@ import asyncio
 from datetime import timedelta
 import logging
 import time
-from typing import Any
 
 from miio import ChuangmiIr, DeviceException
 import voluptuous as vol
@@ -182,8 +181,6 @@ async def async_setup_platform(
 class XiaomiMiioRemote(RemoteEntity):
     """Representation of a Xiaomi Miio Remote device."""
 
-    _attr_should_poll = False
-
     def __init__(self, friendly_name, device, unique_id, slot, timeout, commands):
         """Initialize the remote."""
         self._name = friendly_name
@@ -228,14 +225,19 @@ class XiaomiMiioRemote(RemoteEntity):
         except DeviceException:
             return False
 
-    async def async_turn_on(self, **kwargs: Any) -> None:
+    @property
+    def should_poll(self):
+        """We should not be polled for device up state."""
+        return False
+
+    async def async_turn_on(self, **kwargs):
         """Turn the device on."""
         _LOGGER.error(
             "Device does not support turn_on, "
             "please use 'remote.send_command' to send commands"
         )
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
+    async def async_turn_off(self, **kwargs):
         """Turn the device off."""
         _LOGGER.error(
             "Device does not support turn_off, "

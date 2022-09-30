@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 
 from homeassistant.components.button import (
     ButtonDeviceClass,
@@ -22,9 +23,13 @@ from .const import (
     MODEL_AIRFRESH_T2017,
 )
 from .device import XiaomiCoordinatedMiioEntity
+from .ng_button import XiaomiButton
 
 ATTR_RESET_DUST_FILTER = "reset_dust_filter"
 ATTR_RESET_UPPER_FILTER = "reset_upper_filter"
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -71,11 +76,8 @@ async def async_setup_entry(
     """Set up the button from a config entry."""
     model = config_entry.data[CONF_MODEL]
 
-    if model not in MODEL_TO_BUTTON_MAP:
-        return
-
     entities = []
-    buttons = MODEL_TO_BUTTON_MAP[model]
+    buttons = MODEL_TO_BUTTON_MAP.get(model, [])
     unique_id = config_entry.unique_id
     device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
     coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
@@ -93,6 +95,9 @@ async def async_setup_entry(
                 description,
             )
         )
+
+    for button in device.buttons():
+        entities.append(XiaomiButton(button, device, config_entry, coordinator))
 
     async_add_entities(entities)
 

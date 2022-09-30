@@ -145,9 +145,8 @@ class XiaomiCoordinatedMiioEntity(CoordinatorEntity[_T]):
     async def _try_command(self, mask_error, func, *args, **kwargs):
         """Call a miio device command handling error messages."""
         try:
-            result = await self.hass.async_add_executor_job(
-                partial(func, *args, **kwargs)
-            )
+            full_func = partial(func, *args, **kwargs)
+            result = await self.hass.async_add_executor_job(full_func)
 
             _LOGGER.debug("Response received from miio device: %s", result)
 
@@ -161,6 +160,7 @@ class XiaomiCoordinatedMiioEntity(CoordinatorEntity[_T]):
     @classmethod
     def _extract_value_from_attribute(cls, state, attribute):
         value = getattr(state, attribute)
+
         if isinstance(value, Enum):
             return value.value
         if isinstance(value, datetime.timedelta):

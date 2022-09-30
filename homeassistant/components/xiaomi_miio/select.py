@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import NamedTuple
+import logging
 
+"""
+"""
 from miio.fan_common import LedBrightness as FanLedBrightness
 from miio.integrations.airpurifier.dmaker.airfresh_t2017 import (
     DisplayOrientation as AirfreshT2017DisplayOrientation,
@@ -40,7 +43,6 @@ from .const import (
     KEY_DEVICE,
     MODEL_AIRFRESH_T2017,
     MODEL_AIRFRESH_VA2,
-    MODEL_AIRFRESH_VA4,
     MODEL_AIRHUMIDIFIER_CA1,
     MODEL_AIRHUMIDIFIER_CA4,
     MODEL_AIRHUMIDIFIER_CB1,
@@ -58,10 +60,14 @@ from .const import (
     MODEL_FAN_ZA4,
 )
 from .device import XiaomiCoordinatedMiioEntity
+from .ng_select import XiaomiSelect
 
 ATTR_DISPLAY_ORIENTATION = "display_orientation"
 ATTR_LED_BRIGHTNESS = "led_brightness"
 ATTR_PTC_LEVEL = "ptc_level"
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -88,9 +94,6 @@ MODEL_TO_ATTR_MAP: dict[str, list] = {
         AttributeEnumMapping(ATTR_PTC_LEVEL, AirfreshT2017PtcLevel),
     ],
     MODEL_AIRFRESH_VA2: [
-        AttributeEnumMapping(ATTR_LED_BRIGHTNESS, AirfreshLedBrightness)
-    ],
-    MODEL_AIRFRESH_VA4: [
         AttributeEnumMapping(ATTR_LED_BRIGHTNESS, AirfreshLedBrightness)
     ],
     MODEL_AIRHUMIDIFIER_CA1: [
@@ -180,14 +183,12 @@ async def async_setup_entry(
         return
 
     model = config_entry.data[CONF_MODEL]
-    if model not in MODEL_TO_ATTR_MAP:
-        return
 
     entities = []
     unique_id = config_entry.unique_id
     device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
     coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
-    attributes = MODEL_TO_ATTR_MAP[model]
+    attributes = MODEL_TO_ATTR_MAP.get(model, [])
 
     for description in SELECTOR_TYPES:
         for attribute in attributes:
@@ -202,6 +203,13 @@ async def async_setup_entry(
                         attribute.enum_class,
                     )
                 )
+
+    from miio.descriptors import SettingType
+
+    for setting in device.settings().values():
+        if setting.type == SettingType.Enum:
+            _LOGGER.error("Adding new select: %s", setting)
+            entities.append(XiaomiSelect(device, setting, config_entry, coordinator))
 
     async_add_entities(entities)
 
