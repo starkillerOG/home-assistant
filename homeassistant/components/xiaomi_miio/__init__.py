@@ -111,6 +111,7 @@ VACUUM_PLATFORMS = [
     Platform.BUTTON,
     Platform.NUMBER,
     Platform.SELECT,
+    Platform.SWITCH,
 ]
 AIR_MONITOR_PLATFORMS = [Platform.AIR_QUALITY, Platform.SENSOR]
 

@@ -95,6 +95,7 @@ from .const import (
     MODEL_FAN_ZA5,
     MODELS_FAN,
     MODELS_HUMIDIFIER,
+    MODELS_VACUUM,
     MODELS_HUMIDIFIER_MJJSQ,
     MODELS_PURIFIER_MIIO,
     MODELS_PURIFIER_MIOT,
@@ -337,7 +338,7 @@ async def async_setup_entry(
     """Set up the switch from a config entry."""
     model = config_entry.data[CONF_MODEL]
     # TODO: convert all entities to be coordinated ones
-    if model in (*MODELS_HUMIDIFIER, *MODELS_FAN, *PowerStrip.supported_models):
+    if model in (*MODELS_VACUUM, *MODELS_HUMIDIFIER, *MODELS_FAN, *PowerStrip.supported_models):
         await async_setup_coordinated_entry(hass, config_entry, async_add_entities)
     else:
         await async_setup_other_entry(hass, config_entry, async_add_entities)

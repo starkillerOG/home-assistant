@@ -49,6 +49,7 @@ class XiaomiBinarySensor(XiaomiCoordinatedMiioEntity, BinarySensorEntity):
             icon=sensor.extras.get("icon"),
             device_class=sensor.extras.get("device_class"),
             entity_category=entity_category,
+            entity_registry_enabled_default=sensor.extras.get("enabled_default", True),
         )
 
         self.entity_description = description
