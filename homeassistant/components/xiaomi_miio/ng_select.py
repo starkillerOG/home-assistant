@@ -32,7 +32,7 @@ class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
             entity_category = EntityCategory(setting.extras.get("entity_category"))
 
         self.entity_description = SelectEntityDescription(
-            key=setting.id,
+            key=setting.property,
             name=setting.name,
             icon=setting.extras.get("icon"),
             device_class=setting.extras.get("device_class"),

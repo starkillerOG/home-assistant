@@ -32,7 +32,7 @@ class XiaomiSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
             entity_category = EntityCategory(switch.extras.get("entity_category"))
 
         description = SwitchEntityDescription(
-            key=switch.id,
+            key=switch.property,
             name=name,
             icon=switch.extras.get("icon"),
             device_class=switch.extras.get("device_class"),
