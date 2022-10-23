@@ -20,6 +20,7 @@ from miio import (
     ConsumableStatus,
     Device as MiioDevice,
     DeviceException,
+    DeviceFactory,
     DNDStatus,
     Fan,
     Fan1C,
@@ -284,31 +285,11 @@ def _async_update_data_vacuum(hass, device: RoborockVacuum):
     return update_async
 
 
-async def async_create_miio_device_and_coordinator(
-    hass: HomeAssistant, entry: ConfigEntry
-) -> None:
-    """Set up a data coordinator and one miio device to service multiple entities."""
-    model: str = entry.data[CONF_MODEL]
-    host = entry.data[CONF_HOST]
-    token = entry.data[CONF_TOKEN]
-    name = entry.title
-    device: MiioDevice | None = None
-    migrate = False
-    update_method = _async_update_data_default
-    coordinator_class: type[DataUpdateCoordinator] = DataUpdateCoordinator
-
-    if (
-        model not in MODELS_HUMIDIFIER
-        and model not in MODELS_SWITCH
-        and model not in MODELS_FAN
-        and model not in MODELS_VACUUM
-        and not model.startswith(ROBOROCK_GENERIC)
-        and not model.startswith(ROCKROBO_GENERIC)
-    ):
-        return
-
-    _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
-
+def handle_legacy_init(
+    hass: HomeAssistant, entry: ConfigEntry, host: str, token: str, model: str
+):
+    """Handle legacy init, to be removed."""
+    raise Exception("This should be removed")
     # Humidifiers
     if model in MODELS_HUMIDIFIER_MIOT:
         device = AirHumidifierMiot(host, token)
@@ -367,6 +348,32 @@ async def async_create_miio_device_and_coordinator(
             ):
                 hass.config_entries.async_update_entry(entry, title=migrate_entity_name)
             entity_registry.async_remove(entity_id)
+
+    return device
+
+
+async def async_create_miio_device_and_coordinator(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> None:
+    """Set up a data coordinator and one miio device to service multiple entities."""
+    model: str = entry.data[CONF_MODEL]
+    host = entry.data[CONF_HOST]
+    token = entry.data[CONF_TOKEN]
+    name = entry.title
+    device: MiioDevice | None = None
+    update_method = _async_update_data_default
+    coordinator_class: type[DataUpdateCoordinator] = DataUpdateCoordinator
+
+    _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
+
+    try:
+        device = DeviceFactory.create(host, token, model=model)
+    except DeviceException:
+        device = handle_legacy_init(hass, entry, host, token, model)
+
+    if device is None:
+        _LOGGER.warning("Tried to initialize unsupported %s, skipping", model)
+        return
 
     # Create update miio device and coordinator
     coordinator = coordinator_class(
