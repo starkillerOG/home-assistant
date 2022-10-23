@@ -1,23 +1,11 @@
 """Support for Xiaomi Miio."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import timedelta
 import logging
 
 import async_timeout
-from miio import (
-    CleaningDetails,
-    CleaningSummary,
-    ConsumableStatus,
-    Device as MiioDevice,
-    DeviceException,
-    DeviceFactory,
-    DNDStatus,
-    RoborockVacuum,
-    Timer,
-    VacuumStatus,
-)
+from miio import Device as MiioDevice, DeviceException, DeviceFactory
 from miio.gateway.gateway import GatewayException
 
 from homeassistant.config_entries import ConfigEntry
@@ -83,6 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the Xiaomi Miio components from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     if entry.data[CONF_FLOW_TYPE] == CONF_GATEWAY:
+        # TODO: convert gateway to use the common facilities
         await async_setup_gateway_entry(hass, entry)
         return True
 
@@ -152,95 +141,6 @@ def _async_update_data_default(hass, device):
             raise UpdateFailed(ex) from ex
 
     return update
-
-
-@dataclass(frozen=True)
-class VacuumCoordinatorData:
-    """A class that holds the vacuum data retrieved by the coordinator."""
-
-    status: VacuumStatus
-    dnd_status: DNDStatus
-    last_clean_details: CleaningDetails
-    consumable_status: ConsumableStatus
-    clean_history_status: CleaningSummary
-    timers: list[Timer]
-    fan_speeds: dict[str, int]
-    fan_speeds_reverse: dict[int, str]
-
-
-@dataclass(init=False, frozen=True)
-class VacuumCoordinatorDataAttributes:
-    """
-    A class that holds attribute names for VacuumCoordinatorData.
-
-    These attributes can be used in methods like `getattr` when a generic solutions is
-    needed.
-    See homeassistant.components.xiaomi_miio.device.XiaomiCoordinatedMiioEntity
-    ._extract_value_from_attribute for
-    an example.
-    """
-
-    status: str = "status"
-    dnd_status: str = "dnd_status"
-    last_clean_details: str = "last_clean_details"
-    consumable_status: str = "consumable_status"
-    clean_history_status: str = "clean_history_status"
-    timer: str = "timer"
-    fan_speeds: str = "fan_speeds"
-    fan_speeds_reverse: str = "fan_speeds_reverse"
-
-
-def _async_update_data_vacuum(hass, device: RoborockVacuum):
-    def update() -> VacuumCoordinatorData:
-        timer = []
-
-        # See https://github.com/home-assistant/core/issues/38285 for reason on
-        # Why timers must be fetched separately.
-        try:
-            timer = device.timer()
-        except DeviceException as ex:
-            _LOGGER.debug(
-                "Unable to fetch timers, this may happen on some devices: %s", ex
-            )
-
-        fan_speeds = device.fan_speed_presets()
-
-        data = VacuumCoordinatorData(
-            device.status(),
-            device.dnd_status(),
-            device.last_clean_details(),
-            device.consumable_status(),
-            device.clean_history(),
-            timer,
-            fan_speeds,
-            {v: k for k, v in fan_speeds.items()},
-        )
-
-        return data
-
-    async def update_async():
-        """Fetch data from the device using async_add_executor_job."""
-
-        async def execute_update():
-            async with async_timeout.timeout(POLLING_TIMEOUT_SEC):
-                state = await hass.async_add_executor_job(update)
-                # _LOGGER.debug("Got new vacuum state: %s", state)
-                return state
-
-        try:
-            return await execute_update()
-        except DeviceException as ex:
-            if getattr(ex, "code", None) != -9999:
-                raise UpdateFailed(ex) from ex
-            _LOGGER.info("Got exception while fetching the state, trying again: %s", ex)
-
-        # Try to fetch the data a second time after error code -9999
-        try:
-            return await execute_update()
-        except DeviceException as ex:
-            raise UpdateFailed(ex) from ex
-
-    return update_async
 
 
 async def async_create_miio_device_and_coordinator(

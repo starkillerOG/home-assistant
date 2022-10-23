@@ -16,7 +16,6 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import VacuumCoordinatorDataAttributes
 from .const import (
     CONF_DEVICE,
     CONF_FLOW_TYPE,
@@ -29,8 +28,6 @@ from .const import (
     MODELS_HUMIDIFIER_MIIO,
     MODELS_HUMIDIFIER_MIOT,
     MODELS_HUMIDIFIER_MJJSQ,
-    MODELS_VACUUM,
-    MODELS_VACUUM_WITH_SEPARATE_MOP,
 )
 from .device import XiaomiCoordinatedMiioEntity
 from .ng_binary_sensor import XiaomiBinarySensor
@@ -86,95 +83,9 @@ BINARY_SENSOR_TYPES = (
 AIRFRESH_A1_BINARY_SENSORS = (ATTR_PTC_STATUS,)
 FAN_ZA5_BINARY_SENSORS = (ATTR_POWERSUPPLY_ATTACHED,)
 
-VACUUM_SENSORS = {
-    ATTR_MOP_ATTACHED: XiaomiMiioBinarySensorDescription(
-        key=ATTR_WATER_BOX_ATTACHED,
-        name="Mop attached",
-        icon="mdi:square-rounded",
-        parent_key=VacuumCoordinatorDataAttributes.status,
-        entity_registry_enabled_default=True,
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    ATTR_WATER_BOX_ATTACHED: XiaomiMiioBinarySensorDescription(
-        key=ATTR_WATER_BOX_ATTACHED,
-        name="Water box attached",
-        icon="mdi:water",
-        parent_key=VacuumCoordinatorDataAttributes.status,
-        entity_registry_enabled_default=True,
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    ATTR_WATER_SHORTAGE: XiaomiMiioBinarySensorDescription(
-        key=ATTR_WATER_SHORTAGE,
-        name="Water shortage",
-        icon="mdi:water",
-        parent_key=VacuumCoordinatorDataAttributes.status,
-        entity_registry_enabled_default=True,
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-}
-
-VACUUM_SENSORS_SEPARATE_MOP = {
-    **VACUUM_SENSORS,
-    ATTR_MOP_ATTACHED: XiaomiMiioBinarySensorDescription(
-        key=ATTR_MOP_ATTACHED,
-        name="Mop attached",
-        icon="mdi:square-rounded",
-        parent_key=VacuumCoordinatorDataAttributes.status,
-        entity_registry_enabled_default=True,
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-}
-
 HUMIDIFIER_MIIO_BINARY_SENSORS = (ATTR_WATER_TANK_DETACHED,)
 HUMIDIFIER_MIOT_BINARY_SENSORS = (ATTR_WATER_TANK_DETACHED,)
 HUMIDIFIER_MJJSQ_BINARY_SENSORS = (ATTR_NO_WATER, ATTR_WATER_TANK_DETACHED)
-
-
-def _setup_vacuum_sensors(hass, config_entry, async_add_entities):
-    """Only vacuums with mop should have binary sensor registered."""
-
-    device = hass.data[DOMAIN][config_entry.entry_id].get(KEY_DEVICE)
-    coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
-    entities = []
-    sensors = VACUUM_SENSORS
-
-    if config_entry.data[CONF_MODEL] in MODELS_VACUUM_WITH_SEPARATE_MOP:
-        sensors = VACUUM_SENSORS_SEPARATE_MOP
-
-    for sensor, description in sensors.items():
-        parent_key_data = getattr(coordinator.data, description.parent_key)
-        if getattr(parent_key_data, description.key, None) is None:
-            _LOGGER.debug(
-                "It seems the %s does not support the %s as the initial value is None",
-                config_entry.data[CONF_MODEL],
-                description.key,
-            )
-            continue
-        entities.append(
-            XiaomiGenericBinarySensor(
-                device,
-                config_entry,
-                f"{sensor}_{config_entry.unique_id}",
-                coordinator,
-                description,
-            )
-        )
-
-    for sensor in device.sensors().values():
-        if sensor.type == "binary":
-            if getattr(coordinator.data.status, sensor.id) is None:
-                _LOGGER.debug("Skipping %s as it's value was None", sensor.id)
-                continue
-
-            entities.append(
-                XiaomiBinarySensor(device, sensor, config_entry, coordinator)
-            )
-
-    async_add_entities(entities)
 
 
 async def async_setup_entry(
@@ -198,9 +109,6 @@ async def async_setup_entry(
             sensors = HUMIDIFIER_MIOT_BINARY_SENSORS
         elif model in MODELS_HUMIDIFIER_MJJSQ:
             sensors = HUMIDIFIER_MJJSQ_BINARY_SENSORS
-        elif model in MODELS_VACUUM:
-            pass  # TODO: skip setting up custom sensors for now
-            # return _setup_vacuum_sensors(hass, config_entry, async_add_entities)
 
         for description in BINARY_SENSOR_TYPES:
             if description.key not in sensors:

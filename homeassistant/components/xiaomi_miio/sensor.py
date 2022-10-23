@@ -23,7 +23,6 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    AREA_SQUARE_METERS,
     ATTR_BATTERY_LEVEL,
     ATTR_TEMPERATURE,
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
@@ -46,7 +45,6 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from . import VacuumCoordinatorDataAttributes
 from .const import (
     CONF_DEVICE,
     CONF_FLOW_TYPE,
@@ -79,9 +77,6 @@ from .const import (
     MODELS_HUMIDIFIER_MJJSQ,
     MODELS_PURIFIER_MIIO,
     MODELS_PURIFIER_MIOT,
-    MODELS_VACUUM,
-    ROBOROCK_GENERIC,
-    ROCKROBO_GENERIC,
 )
 from .device import XiaomiCoordinatedMiioEntity, XiaomiMiioEntity
 from .gateway import XiaomiGatewayDevice
@@ -531,179 +526,6 @@ MODEL_TO_SENSORS_MAP: dict[str, tuple[str, ...]] = {
     MODEL_FAN_ZA5: FAN_ZA5_SENSORS,
 }
 
-VACUUM_SENSORS = {
-    f"dnd_{ATTR_DND_START}": XiaomiMiioSensorDescription(
-        key=ATTR_DND_START,
-        icon="mdi:minus-circle-off",
-        name="DnD start",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        parent_key=VacuumCoordinatorDataAttributes.dnd_status,
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"dnd_{ATTR_DND_END}": XiaomiMiioSensorDescription(
-        key=ATTR_DND_END,
-        icon="mdi:minus-circle-off",
-        name="DnD end",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        parent_key=VacuumCoordinatorDataAttributes.dnd_status,
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"last_clean_{ATTR_LAST_CLEAN_START}": XiaomiMiioSensorDescription(
-        key=ATTR_LAST_CLEAN_START,
-        icon="mdi:clock-time-twelve",
-        name="Last clean start",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        parent_key=VacuumCoordinatorDataAttributes.last_clean_details,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"last_clean_{ATTR_LAST_CLEAN_END}": XiaomiMiioSensorDescription(
-        key=ATTR_LAST_CLEAN_END,
-        icon="mdi:clock-time-twelve",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        parent_key=VacuumCoordinatorDataAttributes.last_clean_details,
-        name="Last clean end",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"last_clean_{ATTR_LAST_CLEAN_TIME}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=TIME_SECONDS,
-        icon="mdi:timer-sand",
-        key=ATTR_LAST_CLEAN_TIME,
-        parent_key=VacuumCoordinatorDataAttributes.last_clean_details,
-        name="Last clean duration",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"last_clean_{ATTR_LAST_CLEAN_AREA}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=AREA_SQUARE_METERS,
-        icon="mdi:texture-box",
-        key=ATTR_LAST_CLEAN_AREA,
-        parent_key=VacuumCoordinatorDataAttributes.last_clean_details,
-        name="Last clean area",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"current_{ATTR_STATUS_CLEAN_TIME}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=TIME_SECONDS,
-        icon="mdi:timer-sand",
-        key=ATTR_STATUS_CLEAN_TIME,
-        parent_key=VacuumCoordinatorDataAttributes.status,
-        name="Current clean duration",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"current_{ATTR_LAST_CLEAN_AREA}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=AREA_SQUARE_METERS,
-        icon="mdi:texture-box",
-        key=ATTR_STATUS_CLEAN_AREA,
-        parent_key=VacuumCoordinatorDataAttributes.status,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        name="Current clean area",
-    ),
-    f"clean_history_{ATTR_CLEAN_HISTORY_TOTAL_DURATION}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=TIME_SECONDS,
-        icon="mdi:timer-sand",
-        key=ATTR_CLEAN_HISTORY_TOTAL_DURATION,
-        parent_key=VacuumCoordinatorDataAttributes.clean_history_status,
-        name="Total duration",
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"clean_history_{ATTR_CLEAN_HISTORY_TOTAL_AREA}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=AREA_SQUARE_METERS,
-        icon="mdi:texture-box",
-        key=ATTR_CLEAN_HISTORY_TOTAL_AREA,
-        parent_key=VacuumCoordinatorDataAttributes.clean_history_status,
-        name="Total clean area",
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"clean_history_{ATTR_CLEAN_HISTORY_COUNT}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement="",
-        icon="mdi:counter",
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        key=ATTR_CLEAN_HISTORY_COUNT,
-        parent_key=VacuumCoordinatorDataAttributes.clean_history_status,
-        name="Total clean count",
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"clean_history_{ATTR_CLEAN_HISTORY_DUST_COLLECTION_COUNT}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement="",
-        icon="mdi:counter",
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        key=ATTR_CLEAN_HISTORY_DUST_COLLECTION_COUNT,
-        parent_key=VacuumCoordinatorDataAttributes.clean_history_status,
-        name="Total dust collection count",
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"consumable_{ATTR_CONSUMABLE_STATUS_MAIN_BRUSH_LEFT}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=TIME_SECONDS,
-        icon="mdi:brush",
-        key=ATTR_CONSUMABLE_STATUS_MAIN_BRUSH_LEFT,
-        parent_key=VacuumCoordinatorDataAttributes.consumable_status,
-        name="Main brush left",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"consumable_{ATTR_CONSUMABLE_STATUS_SIDE_BRUSH_LEFT}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=TIME_SECONDS,
-        icon="mdi:brush",
-        key=ATTR_CONSUMABLE_STATUS_SIDE_BRUSH_LEFT,
-        parent_key=VacuumCoordinatorDataAttributes.consumable_status,
-        name="Side brush left",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"consumable_{ATTR_CONSUMABLE_STATUS_FILTER_LEFT}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=TIME_SECONDS,
-        icon="mdi:air-filter",
-        key=ATTR_CONSUMABLE_STATUS_FILTER_LEFT,
-        parent_key=VacuumCoordinatorDataAttributes.consumable_status,
-        name="Filter left",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    f"consumable_{ATTR_CONSUMABLE_STATUS_SENSOR_DIRTY_LEFT}": XiaomiMiioSensorDescription(
-        native_unit_of_measurement=TIME_SECONDS,
-        icon="mdi:eye-outline",
-        key=ATTR_CONSUMABLE_STATUS_SENSOR_DIRTY_LEFT,
-        parent_key=VacuumCoordinatorDataAttributes.consumable_status,
-        name="Sensor dirty left",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-}
-
-
-def _setup_vacuum_sensors(hass, config_entry, async_add_entities):
-    """Set up the Xiaomi vacuum sensors."""
-    device = hass.data[DOMAIN][config_entry.entry_id].get(KEY_DEVICE)
-    coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
-    entities = []
-
-    for sensor, description in VACUUM_SENSORS.items():
-        parent_key_data = getattr(coordinator.data, description.parent_key)
-        try:
-            if getattr(parent_key_data, description.key, None) is None:
-                _LOGGER.debug(
-                    "It seems the %s does not support the %s as the initial value is None",
-                    config_entry.data[CONF_MODEL],
-                    description.key,
-                )
-                continue
-        except KeyError:
-            _LOGGER.error(
-                "Unable to read %s from %s", description.key, description.parent_key
-            )
-            continue
-        entities.append(
-            XiaomiGenericSensor(
-                device,
-                config_entry,
-                f"{sensor}_{config_entry.unique_id}",
-                coordinator,
-                description,
-            )
-        )
-
-    async_add_entities(entities)
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -780,14 +602,6 @@ async def async_setup_entry(
                 sensors = PURIFIER_MIIO_SENSORS
             elif model in MODELS_PURIFIER_MIOT:
                 sensors = PURIFIER_MIOT_SENSORS
-            elif (
-                model in MODELS_VACUUM
-                or model.startswith(ROBOROCK_GENERIC)
-                or model.startswith(ROCKROBO_GENERIC)
-            ):
-                # TODO: skip special handling for vacuum sensors for now
-                pass
-                # _setup_vacuum_sensors(hass, config_entry, async_add_entities)
 
             for sensor, description in SENSOR_TYPES.items():
                 if sensor not in sensors:

@@ -337,7 +337,7 @@ async def async_setup_entry(
     """Set up the switch from a config entry."""
     model = config_entry.data[CONF_MODEL]
     # TODO: convert all entities to be coordinated ones
-    if model in (*MODELS_HUMIDIFIER, *MODELS_FAN, *PowerStrip.supported_models):
+    if model in (*MODELS_HUMIDIFIER, *MODELS_FAN):
         await async_setup_coordinated_entry(hass, config_entry, async_add_entities)
     else:
         await async_setup_other_entry(hass, config_entry, async_add_entities)
@@ -424,6 +424,8 @@ async def async_setup_other_entry(hass, config_entry, async_add_entities):
 
         _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
 
+        # TODO: add special handling for switch only devices, if even necessary..
+
         if model in ["chuangmi.plug.v1", "chuangmi.plug.v3", "chuangmi.plug.hmi208"]:
             plug = ChuangmiPlug(host, token, model=model)
 
@@ -466,13 +468,6 @@ async def async_setup_other_entry(hass, config_entry, async_add_entities):
             )
             entities.append(device)
             hass.data[DATA_KEY][host] = device
-        else:
-            _LOGGER.error(
-                "Unsupported device found! Please create an issue at "
-                "https://github.com/rytilahti/python-miio/issues "
-                "and provide the following data: %s",
-                model,
-            )
 
         async def async_service_handler(service: ServiceCall) -> None:
             """Map services to methods on XiaomiPlugGenericSwitch."""
