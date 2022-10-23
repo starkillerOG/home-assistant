@@ -7,14 +7,6 @@ import logging
 
 import async_timeout
 from miio import (
-    AirFresh,
-    AirFreshA1,
-    AirFreshT2017,
-    AirHumidifier,
-    AirHumidifierMiot,
-    AirHumidifierMjjsq,
-    AirPurifier,
-    AirPurifierMiot,
     CleaningDetails,
     CleaningSummary,
     ConsumableStatus,
@@ -22,12 +14,6 @@ from miio import (
     DeviceException,
     DeviceFactory,
     DNDStatus,
-    Fan,
-    Fan1C,
-    FanMiot,
-    FanP5,
-    FanZA5,
-    PowerStrip,
     RoborockVacuum,
     Timer,
     VacuumStatus,
@@ -38,7 +24,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_MODEL, CONF_TOKEN, Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -49,27 +35,12 @@ from .const import (
     DOMAIN,
     KEY_COORDINATOR,
     KEY_DEVICE,
-    MODEL_AIRFRESH_A1,
-    MODEL_AIRFRESH_T2017,
-    MODEL_FAN_1C,
-    MODEL_FAN_P5,
-    MODEL_FAN_P9,
-    MODEL_FAN_P10,
-    MODEL_FAN_P11,
-    MODEL_FAN_ZA5,
     MODELS_AIR_MONITOR,
     MODELS_FAN,
-    MODELS_FAN_MIIO,
     MODELS_HUMIDIFIER,
-    MODELS_HUMIDIFIER_MIIO,
-    MODELS_HUMIDIFIER_MIOT,
-    MODELS_HUMIDIFIER_MJJSQ,
     MODELS_LIGHT,
-    MODELS_PURIFIER_MIOT,
     MODELS_SWITCH,
     MODELS_VACUUM,
-    ROBOROCK_GENERIC,
-    ROCKROBO_GENERIC,
     AuthException,
     SetupException,
 )
@@ -80,49 +51,32 @@ _LOGGER = logging.getLogger(__name__)
 POLLING_TIMEOUT_SEC = 10
 UPDATE_INTERVAL = timedelta(seconds=15)
 
-GATEWAY_PLATFORMS = [
+# List of common platforms initialized for all supported devices
+COMMON_PLATFORMS = {
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SWITCH,
+}
+
+GATEWAY_PLATFORMS = {
     Platform.ALARM_CONTROL_PANEL,
     Platform.LIGHT,
-    Platform.SENSOR,
-    Platform.SWITCH,
-]
-SWITCH_PLATFORMS = [Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR]
-FAN_PLATFORMS = [
-    Platform.BINARY_SENSOR,
-    Platform.BUTTON,
-    Platform.FAN,
-    Platform.NUMBER,
-    Platform.SELECT,
-    Platform.SENSOR,
-    Platform.SWITCH,
-]
-HUMIDIFIER_PLATFORMS = [
-    Platform.BINARY_SENSOR,
-    Platform.HUMIDIFIER,
-    Platform.NUMBER,
-    Platform.SELECT,
-    Platform.SENSOR,
-    Platform.SWITCH,
-]
-LIGHT_PLATFORMS = [Platform.LIGHT]
-VACUUM_PLATFORMS = [
-    Platform.BINARY_SENSOR,
-    Platform.SENSOR,
-    Platform.VACUUM,
-    Platform.BUTTON,
-    Platform.NUMBER,
-    Platform.SELECT,
-]
-AIR_MONITOR_PLATFORMS = [Platform.AIR_QUALITY, Platform.SENSOR]
-
-MODEL_TO_CLASS_MAP = {
-    MODEL_FAN_1C: Fan1C,
-    MODEL_FAN_P9: FanMiot,
-    MODEL_FAN_P10: FanMiot,
-    MODEL_FAN_P11: FanMiot,
-    MODEL_FAN_P5: FanP5,
-    MODEL_FAN_ZA5: FanZA5,
 }
+SWITCH_PLATFORMS: set[str] = set()
+FAN_PLATFORMS = {
+    Platform.FAN,
+}
+HUMIDIFIER_PLATFORMS = {
+    Platform.HUMIDIFIER,
+}
+LIGHT_PLATFORMS = {Platform.LIGHT}
+VACUUM_PLATFORMS = {
+    Platform.VACUUM,
+}
+AIR_MONITOR_PLATFORMS = {Platform.AIR_QUALITY}
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -145,29 +99,33 @@ def get_platforms(config_entry):
     flow_type = config_entry.data[CONF_FLOW_TYPE]
 
     if flow_type == CONF_GATEWAY:
-        return GATEWAY_PLATFORMS
+        return GATEWAY_PLATFORMS | COMMON_PLATFORMS
+
+    # TODO: we need to check the device type to choose which "special" platforms to initialize
     if flow_type == CONF_DEVICE:
         if model in MODELS_SWITCH:
-            return SWITCH_PLATFORMS
+            return SWITCH_PLATFORMS | COMMON_PLATFORMS
         if model in MODELS_HUMIDIFIER:
-            return HUMIDIFIER_PLATFORMS
+            return HUMIDIFIER_PLATFORMS | COMMON_PLATFORMS
         if model in MODELS_FAN:
-            return FAN_PLATFORMS
+            return FAN_PLATFORMS | COMMON_PLATFORMS
         if model in MODELS_LIGHT:
-            return LIGHT_PLATFORMS
+            return LIGHT_PLATFORMS | COMMON_PLATFORMS
         for vacuum_model in MODELS_VACUUM:
             if model.startswith(vacuum_model):
-                return VACUUM_PLATFORMS
+                return VACUUM_PLATFORMS | COMMON_PLATFORMS
         for air_monitor_model in MODELS_AIR_MONITOR:
             if model.startswith(air_monitor_model):
-                return AIR_MONITOR_PLATFORMS
+                return AIR_MONITOR_PLATFORMS | COMMON_PLATFORMS
+
     _LOGGER.error(
-        "Unsupported device found! Please create an issue at "
-        "https://github.com/syssi/xiaomi_airpurifier/issues "
-        "and provide the following data: %s",
+        "Found a platform with no type designation, please report %s "
+        "and expected platform to %s",
         model,
+        "https://github.com/rytilahti/python-miio/issues",
     )
-    return []
+
+    return COMMON_PLATFORMS
 
 
 def _async_update_data_default(hass, device):
@@ -285,73 +243,6 @@ def _async_update_data_vacuum(hass, device: RoborockVacuum):
     return update_async
 
 
-def handle_legacy_init(
-    hass: HomeAssistant, entry: ConfigEntry, host: str, token: str, model: str
-):
-    """Handle legacy init, to be removed."""
-    raise Exception("This should be removed")
-    # Humidifiers
-    if model in MODELS_HUMIDIFIER_MIOT:
-        device = AirHumidifierMiot(host, token)
-        migrate = True
-    elif model in MODELS_HUMIDIFIER_MJJSQ:
-        device = AirHumidifierMjjsq(host, token, model=model)
-        migrate = True
-    elif model in MODELS_HUMIDIFIER_MIIO:
-        device = AirHumidifier(host, token, model=model)
-        migrate = True
-    # Airpurifiers and Airfresh
-    elif model in MODELS_PURIFIER_MIOT:
-        device = AirPurifierMiot(host, token)
-    elif model.startswith("zhimi.airpurifier."):
-        device = AirPurifier(host, token)
-    elif model.startswith("zhimi.airfresh."):
-        device = AirFresh(host, token)
-    elif model == MODEL_AIRFRESH_A1:
-        device = AirFreshA1(host, token)
-    elif model == MODEL_AIRFRESH_T2017:
-        device = AirFreshT2017(host, token)
-    elif (
-        model in MODELS_VACUUM
-        or model.startswith(ROBOROCK_GENERIC)
-        or model.startswith(ROCKROBO_GENERIC)
-    ):
-        device = RoborockVacuum(host, token)
-        # TODO: disable special handling, to be removed later on
-        # update_method = _async_update_data_vacuum
-        # coordinator_class = DataUpdateCoordinator[VacuumCoordinatorData]
-    # Pedestal fans
-    elif model in MODEL_TO_CLASS_MAP:
-        device = MODEL_TO_CLASS_MAP[model](host, token)
-    elif model in MODELS_FAN_MIIO:
-        device = Fan(host, token, model=model)
-    elif model in PowerStrip.supported_models:
-        device = PowerStrip(host, token, model=model)
-    else:
-        _LOGGER.error(
-            "Unsupported device found! Please create an issue at "
-            "https://github.com/syssi/xiaomi_airpurifier/issues "
-            "and provide the following data: %s",
-            model,
-        )
-        return
-
-    if migrate:
-        # Removing fan platform entity for humidifiers and migrate the name to the config entry for migration
-        entity_registry = er.async_get(hass)
-        assert entry.unique_id
-        entity_id = entity_registry.async_get_entity_id("fan", DOMAIN, entry.unique_id)
-        if entity_id:
-            # This check is entities that have a platform migration only and should be removed in the future
-            if (entity := entity_registry.async_get(entity_id)) and (
-                migrate_entity_name := entity.name
-            ):
-                hass.config_entries.async_update_entry(entry, title=migrate_entity_name)
-            entity_registry.async_remove(entity_id)
-
-    return device
-
-
 async def async_create_miio_device_and_coordinator(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> None:
@@ -369,11 +260,8 @@ async def async_create_miio_device_and_coordinator(
     try:
         device = DeviceFactory.create(host, token, model=model)
     except DeviceException:
-        device = handle_legacy_init(hass, entry, host, token, model)
-
-    if device is None:
         _LOGGER.warning("Tried to initialize unsupported %s, skipping", model)
-        return
+        raise
 
     # Create update miio device and coordinator
     coordinator = coordinator_class(
