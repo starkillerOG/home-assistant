@@ -25,7 +25,6 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.util.dt import as_utc
 
 from .const import (
     CONF_DEVICE,
@@ -45,14 +44,11 @@ from .device import XiaomiCoordinatedMiioEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-ATTR_ERROR = "error"
 ATTR_RC_DURATION = "duration"
 ATTR_RC_ROTATION = "rotation"
 ATTR_RC_VELOCITY = "velocity"
-ATTR_STATUS = "status"
 ATTR_ZONE_ARRAY = "zone"
 ATTR_ZONE_REPEATER = "repeats"
-ATTR_TIMERS = "timers"
 
 
 async def async_setup_entry(
@@ -63,6 +59,7 @@ async def async_setup_entry(
     """Set up the Xiaomi vacuum cleaner robot from a config entry."""
     entities = []
 
+    # TODO: this check should not be necessary, right?
     if config_entry.data[CONF_FLOW_TYPE] == CONF_DEVICE:
         unique_id = config_entry.unique_id
 
@@ -76,6 +73,7 @@ async def async_setup_entry(
 
         platform = entity_platform.async_get_current_platform()
 
+        # TODO: python-miio should expose enough information to construct custom services
         platform.async_register_entity_service(
             SERVICE_START_REMOTE_CONTROL,
             {},
@@ -198,11 +196,6 @@ class XiaomiVacuum(
     @property
     def state(self) -> str | None:
         """Return the status of the vacuum cleaner."""
-        # The vacuum reverts back to an idle state after erroring out.
-        # We want to keep returning an error until it has been cleared.
-        if self.coordinator.data.vacuum_state == VacuumState.Error:
-            return STATE_ERROR
-
         return self._state
 
     @property
@@ -227,29 +220,6 @@ class XiaomiVacuum(
     def fan_speed_list(self) -> list[str]:
         """Get the list of available fan speed steps of the vacuum cleaner."""
         return list(self._fan_speed_presets)
-
-    @property
-    def timers(self) -> list[dict[str, Any]]:
-        """Get the list of added timers of the vacuum cleaner."""
-        return []
-        return [
-            {
-                "enabled": timer.enabled,
-                "cron": timer.cron,
-                "next_schedule": as_utc(timer.next_schedule),
-            }
-            for timer in self.coordinator.data.timers
-        ]
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return the specific state attributes of this vacuum cleaner."""
-        attrs: dict[str, Any] = {}
-        attrs[ATTR_STATUS] = str(self.coordinator.data.state)
-
-        if self.timers:
-            attrs[ATTR_TIMERS] = self.timers
-        return attrs
 
     async def _try_command(self, mask_error, func, *args, **kwargs):
         """Call a vacuum command handling error messages."""
