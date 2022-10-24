@@ -1,17 +1,13 @@
 """Support for Xiaomi Miio sensor entities."""
 from __future__ import annotations
 
+from enum import Enum
 import logging
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorEntityDescription,
-)
+from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
 from homeassistant.components.xiaomi_miio.sensor import XiaomiMiioSensorDescription
 from homeassistant.core import callback
-from homeassistant.util import dt as dt_util
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,24 +59,14 @@ class XiaomiSensor(XiaomiCoordinatedMiioEntity, SensorEntity):
 
     def _determine_native_value(self):
         """Determine native value."""
-        return getattr(self.coordinator.data, self._property)
-        # TODO: add type handling
-        if self.entity_description.parent_key is not None:
-            native_value = self._extract_value_from_attribute(
-                getattr(self.coordinator.data, self.entity_description.parent_key),
-                self.entity_description.key,
-            )
-        else:
-            native_value = self._extract_value_from_attribute(
-                self.coordinator.data, self.entity_description.key
-            )
+        val = getattr(self.coordinator.data, self._property)
 
-        if (
-            self.device_class == SensorDeviceClass.TIMESTAMP
-            and native_value is not None
-            and (native_datetime := dt_util.parse_datetime(str(native_value)))
-            is not None
-        ):
-            return native_datetime.astimezone(dt_util.UTC)
+        if isinstance(val, Enum):
+            val = val.name
 
-        return native_value
+        # TODO: check how to handle timestamps properly
+        # if(self.device_class == SensorDeviceClass.TIMESTAMP): ...
+        #     native_dt = dt_util.parse_datetime(val)
+        #      return native_dt.astimezone(dt_util.UTC)
+
+        return val
