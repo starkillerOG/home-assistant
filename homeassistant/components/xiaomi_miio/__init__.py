@@ -6,7 +6,6 @@ import logging
 
 import async_timeout
 from miio import Device as MiioDevice, DeviceException, DeviceFactory
-from miio.gateway.gateway import GatewayException
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_MODEL, CONF_TOKEN, Platform
@@ -225,7 +224,7 @@ async def async_setup_gateway_entry(hass: HomeAssistant, entry: ConfigEntry) -> 
             """Fetch data from the subdevice."""
             try:
                 await hass.async_add_executor_job(sub_device.update)
-            except GatewayException as ex:
+            except DeviceException as ex:
                 _LOGGER.error("Got exception while fetching the state: %s", ex)
                 return {ATTR_AVAILABLE: False}
             return {ATTR_AVAILABLE: True}

@@ -12,7 +12,6 @@ from miio.gateway.gateway import (
     GATEWAY_MODEL_AC_V3,
     GATEWAY_MODEL_AQARA,
     GATEWAY_MODEL_EU,
-    GatewayException,
 )
 
 from homeassistant.components.sensor import (
@@ -798,7 +797,7 @@ class XiaomiGatewayIlluminanceSensor(SensorEntity):
                 self._gateway.get_illumination
             )
             self._available = True
-        except GatewayException as ex:
+        except DeviceException as ex:
             if self._available:
                 self._available = False
                 _LOGGER.error(
