@@ -8,6 +8,7 @@ from typing import Any
 
 from micloud import MiCloud
 from micloud.micloudexception import MiCloudAccessDenied
+from miio import DeviceFactory
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -399,7 +400,7 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 flow_type = CONF_GATEWAY
 
         if flow_type is None:
-            for device_model in MODELS_ALL_DEVICES:
+            for device_model in DeviceFactory.supported_models():
                 if self.model.startswith(device_model):
                     flow_type = CONF_DEVICE
 
