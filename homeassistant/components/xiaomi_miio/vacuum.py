@@ -8,7 +8,6 @@ from typing import Any
 
 from miio import DeviceException
 from miio.interfaces.vacuuminterface import VacuumState
-import voluptuous as vol
 
 from homeassistant.components.vacuum import (
     STATE_CLEANING,
@@ -22,24 +21,10 @@ from homeassistant.components.vacuum import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import (
-    CONF_DEVICE,
-    CONF_FLOW_TYPE,
-    DOMAIN,
-    KEY_COORDINATOR,
-    KEY_DEVICE,
-    SERVICE_CLEAN_SEGMENT,
-    SERVICE_CLEAN_ZONE,
-    SERVICE_GOTO,
-    SERVICE_MOVE_REMOTE_CONTROL,
-    SERVICE_MOVE_REMOTE_CONTROL_STEP,
-    SERVICE_START_REMOTE_CONTROL,
-    SERVICE_STOP_REMOTE_CONTROL,
-)
+from .const import DOMAIN, KEY_COORDINATOR, KEY_DEVICE
 from .device import XiaomiCoordinatedMiioEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -59,99 +44,38 @@ async def async_setup_entry(
     """Set up the Xiaomi vacuum cleaner robot from a config entry."""
     entities = []
 
-    # TODO: this check should not be necessary, right?
-    if config_entry.data[CONF_FLOW_TYPE] == CONF_DEVICE:
-        unique_id = config_entry.unique_id
+    unique_id = config_entry.unique_id
 
-        mirobo = XiaomiVacuum(
-            hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE],
-            config_entry,
-            unique_id,
-            hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR],
-        )
-        entities.append(mirobo)
-
-        platform = entity_platform.async_get_current_platform()
-
-        # TODO: python-miio should expose enough information to construct custom services
-        platform.async_register_entity_service(
-            SERVICE_START_REMOTE_CONTROL,
-            {},
-            XiaomiVacuum.async_remote_control_start.__name__,
-        )
-
-        platform.async_register_entity_service(
-            SERVICE_STOP_REMOTE_CONTROL,
-            {},
-            XiaomiVacuum.async_remote_control_stop.__name__,
-        )
-
-        platform.async_register_entity_service(
-            SERVICE_MOVE_REMOTE_CONTROL,
-            {
-                vol.Optional(ATTR_RC_VELOCITY): vol.All(
-                    vol.Coerce(float), vol.Clamp(min=-0.29, max=0.29)
-                ),
-                vol.Optional(ATTR_RC_ROTATION): vol.All(
-                    vol.Coerce(int), vol.Clamp(min=-179, max=179)
-                ),
-                vol.Optional(ATTR_RC_DURATION): cv.positive_int,
-            },
-            XiaomiVacuum.async_remote_control_move.__name__,
-        )
-
-        platform.async_register_entity_service(
-            SERVICE_MOVE_REMOTE_CONTROL_STEP,
-            {
-                vol.Optional(ATTR_RC_VELOCITY): vol.All(
-                    vol.Coerce(float), vol.Clamp(min=-0.29, max=0.29)
-                ),
-                vol.Optional(ATTR_RC_ROTATION): vol.All(
-                    vol.Coerce(int), vol.Clamp(min=-179, max=179)
-                ),
-                vol.Optional(ATTR_RC_DURATION): cv.positive_int,
-            },
-            XiaomiVacuum.async_remote_control_move_step.__name__,
-        )
-
-        platform.async_register_entity_service(
-            SERVICE_CLEAN_ZONE,
-            {
-                vol.Required(ATTR_ZONE_ARRAY): vol.All(
-                    list,
-                    [
-                        vol.ExactSequence(
-                            [
-                                vol.Coerce(int),
-                                vol.Coerce(int),
-                                vol.Coerce(int),
-                                vol.Coerce(int),
-                            ]
-                        )
-                    ],
-                ),
-                vol.Required(ATTR_ZONE_REPEATER): vol.All(
-                    vol.Coerce(int), vol.Clamp(min=1, max=3)
-                ),
-            },
-            XiaomiVacuum.async_clean_zone.__name__,
-        )
-
-        platform.async_register_entity_service(
-            SERVICE_GOTO,
-            {
-                vol.Required("x_coord"): vol.Coerce(int),
-                vol.Required("y_coord"): vol.Coerce(int),
-            },
-            XiaomiVacuum.async_goto.__name__,
-        )
-        platform.async_register_entity_service(
-            SERVICE_CLEAN_SEGMENT,
-            {vol.Required("segments"): vol.Any(vol.Coerce(int), [vol.Coerce(int)])},
-            XiaomiVacuum.async_clean_segment.__name__,
-        )
+    vacuum = XiaomiVacuum(
+        hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE],
+        config_entry,
+        unique_id,
+        hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR],
+    )
+    entities.append(vacuum)
 
     async_add_entities(entities, update_before_add=True)
+
+    """
+    TODO: this platform previously exported the following services that are very specific
+           to specific vacuum integrations supported by python-miio.
+           rather than hardcoding these, python-miio should be improved to expose enough information
+           for homeassistant to expose these services dynamically:
+            * vacuum_remote_control_move
+            * vacuum_remote_control_move_step
+            * vacuum_remote_control_start
+            * vacuum_remote_control_stop
+            * vacuum_clean_segment
+            * vacuum_clean_zone
+            * vacuum_goto
+
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_START_REMOTE_CONTROL,
+        {},
+        XiaomiVacuum.async_remote_control_start.__name__,
+    )
+    """
 
 
 class XiaomiVacuum(
@@ -294,73 +218,6 @@ class XiaomiVacuum(
             command,
             params,
         )
-
-    async def async_remote_control_start(self) -> None:
-        """Start remote control mode."""
-        await self._try_command(
-            "Unable to start remote control the vacuum: %s", self._device.manual_start
-        )
-
-    async def async_remote_control_stop(self) -> None:
-        """Stop remote control mode."""
-        await self._try_command(
-            "Unable to stop remote control the vacuum: %s", self._device.manual_stop
-        )
-
-    async def async_remote_control_move(
-        self, rotation: int = 0, velocity: float = 0.3, duration: int = 1500
-    ) -> None:
-        """Move vacuum with remote control mode."""
-        await self._try_command(
-            "Unable to move with remote control the vacuum: %s",
-            self._device.manual_control,
-            velocity=velocity,
-            rotation=rotation,
-            duration=duration,
-        )
-
-    async def async_remote_control_move_step(
-        self, rotation: int = 0, velocity: float = 0.2, duration: int = 1500
-    ) -> None:
-        """Move vacuum one step with remote control mode."""
-        await self._try_command(
-            "Unable to remote control the vacuum: %s",
-            self._device.manual_control_once,
-            velocity=velocity,
-            rotation=rotation,
-            duration=duration,
-        )
-
-    async def async_goto(self, x_coord: int, y_coord: int) -> None:
-        """Goto the specified coordinates."""
-        await self._try_command(
-            "Unable to send the vacuum cleaner to the specified coordinates: %s",
-            self._device.goto,
-            x_coord=x_coord,
-            y_coord=y_coord,
-        )
-
-    async def async_clean_segment(self, segments) -> None:
-        """Clean the specified segments(s)."""
-        if isinstance(segments, int):
-            segments = [segments]
-
-        await self._try_command(
-            "Unable to start cleaning of the specified segments: %s",
-            self._device.segment_clean,
-            segments=segments,
-        )
-
-    async def async_clean_zone(self, zone: list[Any], repeats: int = 1) -> None:
-        """Clean selected area for the number of repeats indicated."""
-        for _zone in zone:
-            _zone.append(repeats)
-        _LOGGER.debug("Zone with repeats: %s", zone)
-        try:
-            await self.hass.async_add_executor_job(self._device.zoned_clean, zone)
-            await self.coordinator.async_refresh()
-        except (OSError, DeviceException) as exc:
-            _LOGGER.error("Unable to send zoned_clean command to the vacuum: %s", exc)
 
     @callback
     def _handle_coordinator_update(self) -> None:
