@@ -264,9 +264,7 @@ class XiaomiVacuum(
 
     async def async_start(self) -> None:
         """Start or resume the cleaning task."""
-        await self._try_command(
-            "Unable to start the vacuum: %s", self._device.resume_or_start
-        )
+        await self._try_command("Unable to start the vacuum: %s", self._device.start)
 
     async def async_pause(self) -> None:
         """Pause the cleaning task."""
