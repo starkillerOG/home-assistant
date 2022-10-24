@@ -1,11 +1,13 @@
 """Support for the Xiaomi vacuum cleaner robot."""
 from __future__ import annotations
 
+from enum import Enum
 from functools import partial
 import logging
 from typing import Any
 
 from miio import DeviceException
+from miio.interfaces.vacuuminterface import VacuumState
 import voluptuous as vol
 
 from homeassistant.components.vacuum import (
@@ -51,30 +53,6 @@ ATTR_STATUS = "status"
 ATTR_ZONE_ARRAY = "zone"
 ATTR_ZONE_REPEATER = "repeats"
 ATTR_TIMERS = "timers"
-
-STATE_CODE_TO_STATE = {
-    1: STATE_IDLE,  # "Starting"
-    2: STATE_IDLE,  # "Charger disconnected"
-    3: STATE_IDLE,  # "Idle"
-    4: STATE_CLEANING,  # "Remote control active"
-    5: STATE_CLEANING,  # "Cleaning"
-    6: STATE_RETURNING,  # "Returning home"
-    7: STATE_CLEANING,  # "Manual mode"
-    8: STATE_DOCKED,  # "Charging"
-    9: STATE_ERROR,  # "Charging problem"
-    10: STATE_PAUSED,  # "Paused"
-    11: STATE_CLEANING,  # "Spot cleaning"
-    12: STATE_ERROR,  # "Error"
-    13: STATE_IDLE,  # "Shutting down"
-    14: STATE_DOCKED,  # "Updating"
-    15: STATE_RETURNING,  # "Docking"
-    16: STATE_CLEANING,  # "Going to target"
-    17: STATE_CLEANING,  # "Zoned cleaning"
-    18: STATE_CLEANING,  # "Segment cleaning"
-    22: STATE_DOCKED,  # "Emptying the bin" on s7+
-    100: STATE_DOCKED,  # "Charging complete"
-    101: STATE_ERROR,  # "Device offline"
-}
 
 
 async def async_setup_entry(
@@ -222,7 +200,7 @@ class MiroboVacuum(
         """Return the status of the vacuum cleaner."""
         # The vacuum reverts back to an idle state after erroring out.
         # We want to keep returning an error until it has been cleared.
-        if self.coordinator.data.got_error:
+        if self.coordinator.data.vacuum_state == VacuumState.Error:
             return STATE_ERROR
 
         return self._state
@@ -262,15 +240,13 @@ class MiroboVacuum(
         attrs: dict[str, Any] = {}
         attrs[ATTR_STATUS] = str(self.coordinator.data.state)
 
-        if self.coordinator.data.got_error:
-            attrs[ATTR_ERROR] = self.coordinator.data.error
-
         if self.timers:
             attrs[ATTR_TIMERS] = self.timers
         return attrs
 
     async def _try_command(self, mask_error, func, *args, **kwargs):
         """Call a vacuum command handling error messages."""
+        # TODO: why is this overloaded? Just to call async_refresh on successes?
         try:
             await self.hass.async_add_executor_job(partial(func, *args, **kwargs))
             await self.coordinator.async_refresh()
@@ -408,16 +384,23 @@ class MiroboVacuum(
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        # TODO: hack to not crash on viomivacuum, to be removed when python-miio provides common state api
-        state_code = int(getattr(self.coordinator.data, "state_code", "101"))
-        if state_code not in STATE_CODE_TO_STATE:
-            _LOGGER.error(
-                "STATE not supported: %s, state_code: %s",
-                self.coordinator.data.state,
-                self.coordinator.data.state_code,
-            )
+        """Handle coordinator update.
+
+        This will convert upstream state to homeassistant constant.
+        """
+        vacstate = self.coordinator.data.vacuum_state
+        VACUUMSTATE_TO_HASS = {
+            VacuumState.Error: STATE_ERROR,
+            VacuumState.Cleaning: STATE_CLEANING,
+            VacuumState.Idle: STATE_IDLE,
+            VacuumState.Docked: STATE_DOCKED,
+            VacuumState.Returning: STATE_RETURNING,
+            VacuumState.Paused: STATE_PAUSED,
+        }
+        try:
+            self._state = VACUUMSTATE_TO_HASS.get(vacstate)
+        except KeyError:
+            _LOGGER.error("Unknown state: %s", vacstate)
             self._state = None
-        else:
-            self._state = STATE_CODE_TO_STATE[state_code]
 
         super()._handle_coordinator_update()
