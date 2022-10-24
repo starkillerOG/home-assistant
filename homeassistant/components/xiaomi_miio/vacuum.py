@@ -214,6 +214,13 @@ class XiaomiVacuum(
     def fan_speed(self) -> str:
         """Return the fan speed of the vacuum cleaner."""
         speed = self.coordinator.data.fanspeed
+        if isinstance(speed, Enum):
+            speed = speed.value
+        _LOGGER.debug(
+            "Got fan speed %s, looking for value from %s",
+            speed,
+            self._fan_speed_presets_reverse,
+        )
         return self._fan_speed_presets_reverse.get(speed, "Custom")
 
     @property
@@ -274,9 +281,14 @@ class XiaomiVacuum(
         # TODO: I don't see any reason this not being simply the following
         # fan_speed = self._fan_speed_presets.get(fan_speed, int(fan_speed))
 
+        _LOGGER.info("Trying to set fan speed to %s", fan_speed)
         if fan_speed in self._fan_speed_presets:
+            _LOGGER.info("Found fan speed from presets")
             fan_speed_int = self._fan_speed_presets[fan_speed]
         else:
+            _LOGGER.info(
+                "Fan speed not found in presets, trying to convert to int and use it"
+            )
             try:
                 fan_speed_int = int(fan_speed)
             except ValueError as exc:
