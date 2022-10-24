@@ -66,7 +66,7 @@ async def async_setup_entry(
     if config_entry.data[CONF_FLOW_TYPE] == CONF_DEVICE:
         unique_id = config_entry.unique_id
 
-        mirobo = MiroboVacuum(
+        mirobo = XiaomiVacuum(
             hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE],
             config_entry,
             unique_id,
@@ -79,13 +79,13 @@ async def async_setup_entry(
         platform.async_register_entity_service(
             SERVICE_START_REMOTE_CONTROL,
             {},
-            MiroboVacuum.async_remote_control_start.__name__,
+            XiaomiVacuum.async_remote_control_start.__name__,
         )
 
         platform.async_register_entity_service(
             SERVICE_STOP_REMOTE_CONTROL,
             {},
-            MiroboVacuum.async_remote_control_stop.__name__,
+            XiaomiVacuum.async_remote_control_stop.__name__,
         )
 
         platform.async_register_entity_service(
@@ -99,7 +99,7 @@ async def async_setup_entry(
                 ),
                 vol.Optional(ATTR_RC_DURATION): cv.positive_int,
             },
-            MiroboVacuum.async_remote_control_move.__name__,
+            XiaomiVacuum.async_remote_control_move.__name__,
         )
 
         platform.async_register_entity_service(
@@ -113,7 +113,7 @@ async def async_setup_entry(
                 ),
                 vol.Optional(ATTR_RC_DURATION): cv.positive_int,
             },
-            MiroboVacuum.async_remote_control_move_step.__name__,
+            XiaomiVacuum.async_remote_control_move_step.__name__,
         )
 
         platform.async_register_entity_service(
@@ -136,7 +136,7 @@ async def async_setup_entry(
                     vol.Coerce(int), vol.Clamp(min=1, max=3)
                 ),
             },
-            MiroboVacuum.async_clean_zone.__name__,
+            XiaomiVacuum.async_clean_zone.__name__,
         )
 
         platform.async_register_entity_service(
@@ -145,18 +145,18 @@ async def async_setup_entry(
                 vol.Required("x_coord"): vol.Coerce(int),
                 vol.Required("y_coord"): vol.Coerce(int),
             },
-            MiroboVacuum.async_goto.__name__,
+            XiaomiVacuum.async_goto.__name__,
         )
         platform.async_register_entity_service(
             SERVICE_CLEAN_SEGMENT,
             {vol.Required("segments"): vol.Any(vol.Coerce(int), [vol.Coerce(int)])},
-            MiroboVacuum.async_clean_segment.__name__,
+            XiaomiVacuum.async_clean_segment.__name__,
         )
 
     async_add_entities(entities, update_before_add=True)
 
 
-class MiroboVacuum(
+class XiaomiVacuum(
     XiaomiCoordinatedMiioEntity[DataUpdateCoordinator],
     StateVacuumEntity,
 ):
