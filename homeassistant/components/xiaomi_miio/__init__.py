@@ -6,6 +6,7 @@ import logging
 
 import async_timeout
 from miio import Device as MiioDevice, DeviceException, DeviceFactory
+from miio.interfaces import VacuumInterface
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_MODEL, CONF_TOKEN, Platform
@@ -81,14 +82,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 @callback
-def get_platforms(config_entry):
+def get_platforms(hass, config_entry):
     """Return the platforms belonging to a config_entry."""
     model = config_entry.data[CONF_MODEL]
     flow_type = config_entry.data[CONF_FLOW_TYPE]
+    device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
 
     if flow_type == CONF_GATEWAY:
         return GATEWAY_PLATFORMS | COMMON_PLATFORMS
 
+    if isinstance(device, VacuumInterface):
+        return COMMON_PLATFORMS | {Platform.VACUUM}
+
+    """
+    if isinstance(device, LightInterface):
+        _LOGGER.error("woot, got light")
+        return COMMON_PLATFORMS | {Platform.LIGHT}
+    """
+
+    # TODO: remove the legacy below
     # TODO: we need to check the device type to choose which "special" platforms to initialize
     if flow_type == CONF_DEVICE:
         if model in MODELS_SWITCH:
@@ -144,7 +156,7 @@ def _async_update_data_default(hass, device):
 
 async def async_create_miio_device_and_coordinator(
     hass: HomeAssistant, entry: ConfigEntry
-) -> None:
+) -> set[Platform]:
     """Set up a data coordinator and one miio device to service multiple entities."""
     model: str = entry.data[CONF_MODEL]
     host = entry.data[CONF_HOST]
@@ -178,6 +190,8 @@ async def async_create_miio_device_and_coordinator(
 
     # Trigger first data fetch
     await coordinator.async_config_entry_first_refresh()
+
+    return get_platforms(hass, entry)
 
 
 async def async_setup_gateway_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -253,8 +267,7 @@ async def async_setup_gateway_entry(hass: HomeAssistant, entry: ConfigEntry) -> 
 
 async def async_setup_device_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the Xiaomi Miio device component from a config entry."""
-    platforms = get_platforms(entry)
-    await async_create_miio_device_and_coordinator(hass, entry)
+    platforms = await async_create_miio_device_and_coordinator(hass, entry)
 
     if not platforms:
         return False
@@ -268,7 +281,7 @@ async def async_setup_device_entry(hass: HomeAssistant, entry: ConfigEntry) -> b
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    platforms = get_platforms(config_entry)
+    platforms = get_platforms(hass, config_entry)
 
     unload_ok = await hass.config_entries.async_unload_platforms(
         config_entry, platforms

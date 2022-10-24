@@ -25,7 +25,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.dt import as_utc
 
-from ...helpers.update_coordinator import DataUpdateCoordinator
 from .const import (
     CONF_DEVICE,
     CONF_FLOW_TYPE,
@@ -409,7 +408,8 @@ class MiroboVacuum(
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        state_code = int(self.coordinator.data.state_code)
+        # TODO: hack to not crash on viomivacuum, to be removed when python-miio provides common state api
+        state_code = int(getattr(self.coordinator.data, "state_code", "101"))
         if state_code not in STATE_CODE_TO_STATE:
             _LOGGER.error(
                 "STATE not supported: %s, state_code: %s",
