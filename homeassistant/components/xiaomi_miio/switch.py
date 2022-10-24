@@ -93,7 +93,6 @@ from .const import (
     MODEL_FAN_ZA3,
     MODEL_FAN_ZA4,
     MODEL_FAN_ZA5,
-    MODELS_FAN,
     MODELS_HUMIDIFIER,
     MODELS_HUMIDIFIER_MJJSQ,
     MODELS_PURIFIER_MIIO,
@@ -335,11 +334,11 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the switch from a config entry."""
-    model = config_entry.data[CONF_MODEL]
-    # TODO: convert all entities to be coordinated ones
-    if model in (*MODELS_HUMIDIFIER, *MODELS_FAN):
+    device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
+    if device.switches():
         await async_setup_coordinated_entry(hass, config_entry, async_add_entities)
     else:
+        # TODO: async_setup_other_entry should be removed completely
         await async_setup_other_entry(hass, config_entry, async_add_entities)
 
 
@@ -380,7 +379,10 @@ async def async_setup_coordinated_entry(hass, config_entry, async_add_entities):
             )
 
     # Handle switches defined by the backing class.
-    for switch in device.switches().values():
+    switches = device.switches()
+    _LOGGER.debug("Found switches: %s", len(device.switches()))
+    for switch in switches.values():
+        _LOGGER.info("Adding switch: %s", switch)
         entities.append(XiaomiSwitch(device, switch, config_entry, coordinator))
 
     async_add_entities(entities)
