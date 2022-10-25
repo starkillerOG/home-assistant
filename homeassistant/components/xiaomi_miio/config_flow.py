@@ -31,8 +31,6 @@ from .const import (
     CONF_MANUAL,
     DEFAULT_CLOUD_COUNTRY,
     DOMAIN,
-    MODELS_ALL,
-    MODELS_ALL_DEVICES,
     MODELS_GATEWAY,
     SERVER_COUNTRY_CODES,
     AuthException,
@@ -46,7 +44,9 @@ DEVICE_SETTINGS = {
     vol.Required(CONF_TOKEN): vol.All(str, vol.Length(min=32, max=32)),
 }
 DEVICE_CONFIG = vol.Schema({vol.Required(CONF_HOST): str}).extend(DEVICE_SETTINGS)
-DEVICE_MODEL_CONFIG = vol.Schema({vol.Required(CONF_MODEL): vol.In(MODELS_ALL)})
+DEVICE_MODEL_CONFIG = vol.Schema(
+    {vol.Required(CONF_MODEL): vol.In(DeviceFactory.supported_models())}
+)
 DEVICE_CLOUD_CONFIG = vol.Schema(
     {
         vol.Optional(CONF_CLOUD_USERNAME): str,
@@ -194,7 +194,7 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
                 return await self.async_step_cloud()
 
-        for device_model in MODELS_ALL_DEVICES:
+        for device_model in DeviceFactory.supported_models():
             if name.startswith(device_model.replace(".", "-")):
                 unique_id = self.mac
                 await self.async_set_unique_id(unique_id)
