@@ -1,9 +1,7 @@
 """Support for Xiaomi Miio binary sensors."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
-from typing import Callable
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -15,19 +13,11 @@ from homeassistant.core import callback
 _LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
-class XiaomiBinarySensorDescription(BinarySensorEntityDescription):
-    """A class that describes binary sensor entities."""
-
-    value: Callable | None = None
-    parent_key: str | None = None
-
-
 class XiaomiBinarySensor(XiaomiCoordinatedMiioEntity, BinarySensorEntity):
     """Representation of a Xiaomi Humidifier binary sensor."""
 
     _attr_has_entity_name = True
-    entity_description: XiaomiBinarySensorDescription
+    entity_description: BinarySensorEntityDescription
 
     def __init__(self, device, sensor, entry, coordinator):
         """Initialize the entity."""
@@ -37,7 +27,7 @@ class XiaomiBinarySensor(XiaomiCoordinatedMiioEntity, BinarySensorEntity):
 
         super().__init__(device, entry, unique_id, coordinator)
 
-        description = XiaomiBinarySensorDescription(
+        description = BinarySensorEntityDescription(
             key=sensor.id,
             name=sensor.name,
             icon=sensor.extras.get("icon"),
