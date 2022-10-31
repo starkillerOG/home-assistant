@@ -25,15 +25,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN, KEY_COORDINATOR, KEY_DEVICE
-from .device import XiaomiCoordinatedMiioEntity
+from .device import XiaomiMiioEntity
 
 _LOGGER = logging.getLogger(__name__)
-
-ATTR_RC_DURATION = "duration"
-ATTR_RC_ROTATION = "rotation"
-ATTR_RC_VELOCITY = "velocity"
-ATTR_ZONE_ARRAY = "zone"
-ATTR_ZONE_REPEATER = "repeats"
 
 
 async def async_setup_entry(
@@ -79,7 +73,7 @@ async def async_setup_entry(
 
 
 class XiaomiVacuum(
-    XiaomiCoordinatedMiioEntity[DataUpdateCoordinator],
+    XiaomiMiioEntity,
     StateVacuumEntity,
 ):
     """Representation of a Xiaomi Vacuum cleaner robot."""

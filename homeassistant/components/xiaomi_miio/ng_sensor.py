@@ -5,14 +5,13 @@ from enum import Enum
 import logging
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
-from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
-from homeassistant.components.xiaomi_miio.sensor import XiaomiMiioSensorDescription
+from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class XiaomiSensor(XiaomiCoordinatedMiioEntity, SensorEntity):
+class XiaomiSensor(XiaomiMiioEntity, SensorEntity):
     """Representation of a Xiaomi generic sensor."""
 
     entity_description: SensorEntityDescription
@@ -31,7 +30,7 @@ class XiaomiSensor(XiaomiCoordinatedMiioEntity, SensorEntity):
 
         unique_id = f"{entry.unique_id}_sensor_{sensor.id}"
 
-        description = XiaomiMiioSensorDescription(
+        description = SensorEntityDescription(
             key=sensor.id,
             name=sensor.name,
             native_unit_of_measurement=sensor.unit,

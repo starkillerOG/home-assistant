@@ -86,7 +86,7 @@ from .const import (
     SERVICE_RESET_FILTER,
     SERVICE_SET_EXTRA_FEATURES,
 )
-from .device import XiaomiCoordinatedMiioEntity
+from .device import XiaomiMiioEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -282,7 +282,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class XiaomiGenericDevice(XiaomiCoordinatedMiioEntity, FanEntity):
+class XiaomiGenericDevice(XiaomiMiioEntity, FanEntity):
     """Representation of a generic Xiaomi device."""
 
     def __init__(self, device, entry, unique_id, coordinator):

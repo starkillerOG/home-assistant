@@ -4,13 +4,13 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
-from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
+from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class XiaomiSelect(XiaomiCoordinatedMiioEntity, SelectEntity):
+class XiaomiSelect(XiaomiMiioEntity, SelectEntity):
     """Representation of a generic Xiaomi attribute selector."""
 
     _attr_has_entity_name = True

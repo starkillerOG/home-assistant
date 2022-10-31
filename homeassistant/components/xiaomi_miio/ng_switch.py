@@ -4,13 +4,13 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
-from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
+from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class XiaomiSwitch(XiaomiCoordinatedMiioEntity, SwitchEntity):
+class XiaomiSwitch(XiaomiMiioEntity, SwitchEntity):
     """Representation of a Xiaomi Plug Generic."""
 
     entity_description: SwitchEntityDescription

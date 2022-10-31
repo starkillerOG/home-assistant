@@ -68,46 +68,7 @@ class ConnectXiaomiDevice:
         )
 
 
-class XiaomiMiioEntity(Entity):
-    """Representation of a base Xiaomi Miio Entity."""
-
-    def __init__(self, name, device, entry, unique_id):
-        """Initialize the Xiaomi Miio Device."""
-        self._device = device
-        self._model = entry.data[CONF_MODEL]
-        self._mac = entry.data[CONF_MAC]
-        self._device_id = entry.unique_id
-        self._unique_id = unique_id
-        self._name = name
-        self._available = None
-
-    @property
-    def unique_id(self):
-        """Return an unique ID."""
-        return self._unique_id
-
-    @property
-    def name(self):
-        """Return the name of this entity, if any."""
-        return self._name
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return the device info."""
-        device_info = DeviceInfo(
-            identifiers={(DOMAIN, self._device_id)},
-            manufacturer="Xiaomi",
-            model=self._model,
-            name=self._name,
-        )
-
-        if self._mac is not None:
-            device_info[ATTR_CONNECTIONS] = {(dr.CONNECTION_NETWORK_MAC, self._mac)}
-
-        return device_info
-
-
-class XiaomiCoordinatedMiioEntity(CoordinatorEntity[_T]):
+class XiaomiMiioEntity(CoordinatorEntity[_T]):
     """Representation of a base a coordinated Xiaomi Miio Entity."""
 
     _attr_has_entity_name = True
@@ -120,12 +81,8 @@ class XiaomiCoordinatedMiioEntity(CoordinatorEntity[_T]):
         self._mac = entry.data[CONF_MAC]
         self._device_id = entry.unique_id
         self._device_name = entry.title
-        self._unique_id = unique_id
-
-    @property
-    def unique_id(self):
-        """Return an unique ID."""
-        return self._unique_id
+        self._attr_unique_id = unique_id
+        self._attr_available = True
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -154,6 +111,7 @@ class XiaomiCoordinatedMiioEntity(CoordinatorEntity[_T]):
         except DeviceException as exc:
             if self.available:
                 _LOGGER.error(mask_error, exc)
+                self._attr_available = False
 
             return False
 

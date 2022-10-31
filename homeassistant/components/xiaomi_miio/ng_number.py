@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 from homeassistant.components.number import NumberEntity, NumberEntityDescription
-from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
+from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
 
 
-class XiaomiNumber(XiaomiCoordinatedMiioEntity, NumberEntity):
+class XiaomiNumber(XiaomiMiioEntity, NumberEntity):
     """Representation of a generic Xiaomi attribute selector."""
 
     def __init__(self, device, setting, entry, coordinator):

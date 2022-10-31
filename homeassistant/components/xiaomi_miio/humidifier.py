@@ -35,7 +35,7 @@ from .const import (
     MODELS_HUMIDIFIER_MIOT,
     MODELS_HUMIDIFIER_MJJSQ,
 )
-from .device import XiaomiCoordinatedMiioEntity
+from .device import XiaomiMiioEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class XiaomiGenericHumidifier(XiaomiCoordinatedMiioEntity, HumidifierEntity):
+class XiaomiGenericHumidifier(XiaomiMiioEntity, HumidifierEntity):
     """Representation of a generic Xiaomi humidifier device."""
 
     _attr_device_class = HumidifierDeviceClass.HUMIDIFIER

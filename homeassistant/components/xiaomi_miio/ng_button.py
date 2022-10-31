@@ -5,11 +5,11 @@ from homeassistant.components.button import (
     ButtonEntity,
     ButtonEntityDescription,
 )
-from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
+from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.util import slugify
 
 
-class XiaomiButton(XiaomiCoordinatedMiioEntity, ButtonEntity):
+class XiaomiButton(XiaomiMiioEntity, ButtonEntity):
 
     entity_description: ButtonEntityDescription
     method: callable

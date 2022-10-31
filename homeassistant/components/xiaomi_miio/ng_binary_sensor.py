@@ -7,13 +7,13 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
+from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class XiaomiBinarySensor(XiaomiCoordinatedMiioEntity, BinarySensorEntity):
+class XiaomiBinarySensor(XiaomiMiioEntity, BinarySensorEntity):
     """Representation of a Xiaomi Humidifier binary sensor."""
 
     _attr_has_entity_name = True
