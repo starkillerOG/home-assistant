@@ -77,11 +77,11 @@ class XiaomiLight(XiaomiMiioEntity, LightEntity):
     def supported_color_modes(self) -> set[ColorMode] | set[str] | None:
         """Return set of supported color modes."""
         modes = set()
-        if "brightness" in self._device.settings():
+        if "light:brightness" in self._device.settings():
             modes.add(ColorMode.BRIGHTNESS)
-        if "color-temperature" in self._device.settings():
+        if "light:color-temperature" in self._device.settings():
             modes.add(ColorMode.COLOR_TEMP)
-        if "color" in self._device.settings():
+        if "light:color" in self._device.settings():
             modes.add(ColorMode.RGB)
 
         return modes
@@ -115,7 +115,7 @@ class XiaomiLight(XiaomiMiioEntity, LightEntity):
 
             result = await self._try_command(
                 "Setting brightness failed: %s",
-                self.set_value,
+                self.set_setting,
                 "light:brightness",
                 percent_brightness,
             )
@@ -125,37 +125,22 @@ class XiaomiLight(XiaomiMiioEntity, LightEntity):
 
         else:
             await self._try_command(
-                "Turning the light on failed.", self.set_value("light:on", True)
+                "Turning the light on failed.", self.set_setting, "light:on", True
             )
-
-    def set_value(self, name: str, value):
-        """Set setting to value."""
-        settings = self._device.settings()
-        if name not in settings:
-            _LOGGER.warning("Device has no '%s'", name)
-            return
-
-        _LOGGER.info("Going to set %s to %s", name, value)
-        return settings[name].setter(value)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the light off."""
         await self._try_command(
-            "Turning the light off failed.", self.set_value("light:on", False)
+            "Turning the light off failed.", self.set_setting, "light:on", False
         )
 
     @callback
     def _handle_coordinator_update(self):
-        state = self.coordinator.data
         settings = self._device.settings()
         if "light:on" in settings:
-            self._attr_is_on = self._extract_value_from_attribute(
-                state, settings["light:on"].id
-            )
+            self._attr_is_on = self.get_setting("light:on")
         if "light:brightness" in settings:
-            brightness = self._extract_value_from_attribute(
-                state, self._device.settings()["light:brightness"].id
-            )
+            brightness = self.get_setting("light:brightness")
             self._attr_brightness = ceil((255 / 100.0) * brightness)
         _LOGGER.error(f"LIGHT: {self._attr_is_on=} {self._attr_brightness=}")
 

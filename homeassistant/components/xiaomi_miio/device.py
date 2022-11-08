@@ -135,6 +135,23 @@ class XiaomiMiioEntity(CoordinatorEntity[_T]):
 
         return value
 
+    def get_setting(self, name: str):
+        """Get setting value."""
+        settings = self._device.settings()
+        return self._extract_value_from_attribute(
+            self.coordinator.data, settings[name].id
+        )
+
+    def set_setting(self, name: str, value):
+        """Set setting to value."""
+        settings = self._device.settings()
+        if name not in settings:
+            _LOGGER.warning("Device has no '%s'", name)
+            return
+
+        _LOGGER.info("Going to set %s to %s", name, value)
+        return settings[name].setter(value)
+
     @staticmethod
     def _parse_time_delta(timedelta: datetime.timedelta) -> int:
         return int(timedelta.total_seconds())
