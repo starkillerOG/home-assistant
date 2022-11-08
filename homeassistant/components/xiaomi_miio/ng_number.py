@@ -26,7 +26,6 @@ class XiaomiNumber(XiaomiMiioEntity, NumberEntity):
             icon=setting.extras.get("icon"),
             device_class=setting.extras.get("device_class"),
             entity_category=setting.extras.get("entity_category"),
-            # entity_category=EntityCategory.CONFIG,
             native_unit_of_measurement=setting.unit,
             native_min_value=setting.min_value,
             native_max_value=setting.max_value,
@@ -37,7 +36,9 @@ class XiaomiNumber(XiaomiMiioEntity, NumberEntity):
 
     async def async_set_native_value(self, value):
         """Set an option of the miio device."""
-        if await self._try_command("Turning %s on failed", self._setter, int(value)):
+        if await self._try_command(
+            "Turning %s on failed", self._setter, value=int(value)
+        ):
             self._attr_native_value = value
             self.async_write_ha_state()
 

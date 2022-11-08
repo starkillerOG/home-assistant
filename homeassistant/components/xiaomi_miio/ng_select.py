@@ -47,7 +47,7 @@ class XiaomiSelect(XiaomiMiioEntity, SelectEntity):
         # check that the value is not None before updating the state.
         if value is not None:
             try:
-                self._attr_current_option = self._choices(value).name
+                self._attr_current_option = self._choices[value].name
             except ValueError:
                 self._attr_current_option = "Unknown"
             finally:
@@ -57,10 +57,11 @@ class XiaomiSelect(XiaomiMiioEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         """Set an option of the miio device."""
         _LOGGER.debug("Setting select value to: %s", option)
+        opt = self._choices[option]
         if await self._try_command(
             "Setting the select value failed",
             self._setter,
-            self._choices[option],
+            opt.value,
         ):
             self._attr_current_option = option
             self.async_write_ha_state()

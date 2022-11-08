@@ -47,7 +47,6 @@ class XiaomiSwitch(XiaomiMiioEntity, SwitchEntity):
         self._attr_is_on = self._extract_value_from_attribute(
             self.coordinator.data, self.entity_description.key
         )
-        _LOGGER.debug("Got update: %s", self)
         self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs) -> None:

@@ -10,7 +10,7 @@ from miio import Device, DeviceException
 
 from homeassistant.const import ATTR_CONNECTIONS, CONF_MODEL
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.entity import DeviceInfo, Entity
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -25,6 +25,8 @@ _T = TypeVar("_T", bound=DataUpdateCoordinator[Any])
 
 class ConnectXiaomiDevice:
     """Class to async connect to a Xiaomi Device."""
+
+    # TODO: is this still relevant?
 
     def __init__(self, hass):
         """Initialize the entity."""
