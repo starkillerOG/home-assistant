@@ -5,8 +5,7 @@ from datetime import timedelta
 import logging
 
 import async_timeout
-from miio import Device as MiioDevice, DeviceException, DeviceFactory
-from miio.interfaces import VacuumInterface
+from miio import Device as MiioDevice, DeviceException, DeviceFactory, DeviceStatus
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_MODEL, CONF_TOKEN, Platform
@@ -23,12 +22,6 @@ from .const import (
     DOMAIN,
     KEY_COORDINATOR,
     KEY_DEVICE,
-    MODELS_AIR_MONITOR,
-    MODELS_FAN,
-    MODELS_HUMIDIFIER,
-    MODELS_LIGHT,
-    MODELS_SWITCH,
-    MODELS_VACUUM,
     AuthException,
     SetupException,
 )
@@ -60,7 +53,6 @@ FAN_PLATFORMS = {
 HUMIDIFIER_PLATFORMS = {
     Platform.HUMIDIFIER,
 }
-LIGHT_PLATFORMS = {Platform.LIGHT}
 VACUUM_PLATFORMS = {
     Platform.VACUUM,
 }
@@ -86,46 +78,18 @@ def get_platforms(hass, config_entry):
     """Return the platforms belonging to a config_entry."""
     model = config_entry.data[CONF_MODEL]
     flow_type = config_entry.data[CONF_FLOW_TYPE]
-    device = hass.data[DOMAIN][config_entry.entry_id][KEY_DEVICE]
+    platforms = COMMON_PLATFORMS
 
     if flow_type == CONF_GATEWAY:
         return GATEWAY_PLATFORMS | COMMON_PLATFORMS
+    if "light" in model:
+        platforms |= {Platform.LIGHT}
+    if "vacuum" in model:
+        platforms |= {Platform.VACUUM}
+    else:
+        _LOGGER.warning("Unhandled device type for: %s", model)
 
-    if isinstance(device, VacuumInterface):
-        return COMMON_PLATFORMS | {Platform.VACUUM}
-
-    """
-    if isinstance(device, LightInterface):
-        _LOGGER.error("woot, got light")
-        return COMMON_PLATFORMS | {Platform.LIGHT}
-    """
-
-    # TODO: remove the legacy below
-    # TODO: we need to check the device type to choose which "special" platforms to initialize
-    if flow_type == CONF_DEVICE:
-        if model in MODELS_SWITCH:
-            return SWITCH_PLATFORMS | COMMON_PLATFORMS
-        if model in MODELS_HUMIDIFIER:
-            return HUMIDIFIER_PLATFORMS | COMMON_PLATFORMS
-        if model in MODELS_FAN:
-            return FAN_PLATFORMS | COMMON_PLATFORMS
-        if model in MODELS_LIGHT:
-            return LIGHT_PLATFORMS | COMMON_PLATFORMS
-        for vacuum_model in MODELS_VACUUM:
-            if model.startswith(vacuum_model):
-                return VACUUM_PLATFORMS | COMMON_PLATFORMS
-        for air_monitor_model in MODELS_AIR_MONITOR:
-            if model.startswith(air_monitor_model):
-                return AIR_MONITOR_PLATFORMS | COMMON_PLATFORMS
-
-    _LOGGER.error(
-        "Found a platform with no type designation, please report %s "
-        "and expected platform to %s",
-        model,
-        "https://github.com/rytilahti/python-miio/issues",
-    )
-
-    return COMMON_PLATFORMS
+    return platforms
 
 
 def _async_update_data_default(hass, device):
@@ -134,9 +98,11 @@ def _async_update_data_default(hass, device):
 
         async def _async_fetch_data():
             """Fetch data from the device."""
+            _LOGGER.info("Going to update for %s", device)
             async with async_timeout.timeout(POLLING_TIMEOUT_SEC):
-                state = await hass.async_add_executor_job(device.status)
+                state: DeviceStatus = await hass.async_add_executor_job(device.status)
                 _LOGGER.debug("Got new state: %s", state)
+
                 return state
 
         try:
@@ -168,11 +134,19 @@ async def async_create_miio_device_and_coordinator(
 
     _LOGGER.debug("Initializing with host %s (token %s...)", host, token[:5])
 
+    # TODO: run in executor, this potentially performs I/O to find the model and initialize miot
     try:
-        device = DeviceFactory.create(host, token, model=model)
+        device = DeviceFactory.create(host, token, model=model, force_generic_miot=True)
     except DeviceException:
         _LOGGER.warning("Tried to initialize unsupported %s, skipping", model)
         raise
+
+    if not device.sensors() and not device.settings():
+        _LOGGER.error(
+            "Device %s exposes no sensors nor settings, this needs to be fixed in upstream",
+            device,
+        )
+        return set()
 
     # Create update miio device and coordinator
     coordinator = coordinator_class(
@@ -180,9 +154,9 @@ async def async_create_miio_device_and_coordinator(
         _LOGGER,
         name=name,
         update_method=update_method(hass, device),
-        # Polling interval. Will only be polled if there are subscribers.
         update_interval=UPDATE_INTERVAL,
     )
+    _LOGGER.info("Created coordinator %s for %s", coordinator, device)
     hass.data[DOMAIN][entry.entry_id] = {
         KEY_DEVICE: device,
         KEY_COORDINATOR: coordinator,
@@ -270,7 +244,10 @@ async def async_setup_device_entry(hass: HomeAssistant, entry: ConfigEntry) -> b
     platforms = await async_create_miio_device_and_coordinator(hass, entry)
 
     if not platforms:
+        _LOGGER.error("Got no platforms for %s, bailing out", entry)
         return False
+
+    _LOGGER.info("Going to initialize platforms: %s", platforms)
 
     entry.async_on_unload(entry.add_update_listener(update_listener))
 
@@ -295,4 +272,5 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 
 async def update_listener(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """Handle options update."""
+    _LOGGER.debug("on_unload called, reloading config entry")
     await hass.config_entries.async_reload(config_entry.entry_id)
