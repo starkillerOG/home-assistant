@@ -27,7 +27,7 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
 
     for sensor in device.sensors().values():
-        if sensor.type == "sensor":
+        if sensor.type != bool:
             if getattr(coordinator.data, sensor.property) is None:
                 _LOGGER.debug("Skipping %s as it's value was None", sensor.property)
                 continue

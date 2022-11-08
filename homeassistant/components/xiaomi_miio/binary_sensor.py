@@ -24,7 +24,8 @@ async def async_setup_entry(
     device = hass.data[DOMAIN][config_entry.entry_id].get(KEY_DEVICE)
     coordinator = hass.data[DOMAIN][config_entry.entry_id][KEY_COORDINATOR]
     for sensor in device.sensors().values():
-        if sensor.type == "binary":
+        if sensor.type == bool:
+            breakpoint()
             if getattr(coordinator.data, sensor.property) is None:
                 # TODO: we might need to rethink this, as some properties (e.g., mop settings)
                 #       are none depending on the device mode
