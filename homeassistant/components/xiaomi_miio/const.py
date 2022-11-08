@@ -1,11 +1,4 @@
 """Constants for the Xiaomi Miio component."""
-from miio.vacuum import (
-    ROCKROBO_S5,
-    ROCKROBO_S6,
-    ROCKROBO_S6_MAXV,
-    ROCKROBO_S7,
-    ROCKROBO_V1,
-)
 
 DOMAIN = "xiaomi_miio"
 
@@ -163,21 +156,6 @@ MODELS_AIR_QUALITY_MONITOR = [
     MODEL_AIRQUALITYMONITOR_CGDN1,
 ]
 
-# Light Models
-MODELS_LIGHT_EYECARE = ["philips.light.sread1"]
-MODELS_LIGHT_CEILING = ["philips.light.ceiling", "philips.light.zyceiling"]
-MODELS_LIGHT_MOON = ["philips.light.moonlight"]
-MODELS_LIGHT_BULB = [
-    "philips.light.bulb",
-    "philips.light.candle",
-    "philips.light.candle2",
-    "philips.light.downlight",
-]
-MODELS_LIGHT_MONO = [
-    "philips.light.mono1",
-    "philips.light.hbulb",
-]
-
 # Model lists
 MODELS_GATEWAY = ["lumi.gateway", "lumi.acpartner"]
 MODELS_SWITCH = [
@@ -198,48 +176,6 @@ MODELS_FAN = (
 MODELS_HUMIDIFIER = (
     MODELS_HUMIDIFIER_MIOT + MODELS_HUMIDIFIER_MIIO + MODELS_HUMIDIFIER_MJJSQ
 )
-MODELS_LIGHT = (
-    MODELS_LIGHT_EYECARE
-    + MODELS_LIGHT_CEILING
-    + MODELS_LIGHT_MOON
-    + MODELS_LIGHT_BULB
-    + MODELS_LIGHT_MONO
-)
-
-# TODO: use const from pythonmiio once new release with the constant has been published. # pylint: disable=fixme
-ROCKROBO_S4 = "roborock.vacuum.s4"
-ROCKROBO_S4_MAX = "roborock.vacuum.a19"
-ROCKROBO_S5_MAX = "roborock.vacuum.s5e"
-ROCKROBO_S6_PURE = "roborock.vacuum.a08"
-ROCKROBO_E2 = "roborock.vacuum.e2"
-ROBOROCK_GENERIC = "roborock.vacuum"
-ROCKROBO_GENERIC = "rockrobo.vacuum"
-MODELS_VACUUM = [
-    ROCKROBO_V1,
-    ROCKROBO_E2,
-    ROCKROBO_S4,
-    ROCKROBO_S4_MAX,
-    ROCKROBO_S5,
-    ROCKROBO_S5_MAX,
-    ROCKROBO_S6,
-    ROCKROBO_S6_MAXV,
-    ROCKROBO_S6_PURE,
-    ROCKROBO_S7,
-    ROBOROCK_GENERIC,
-    ROCKROBO_GENERIC,
-]
-MODELS_VACUUM_WITH_MOP = [
-    ROCKROBO_E2,
-    ROCKROBO_S5,
-    ROCKROBO_S5_MAX,
-    ROCKROBO_S6,
-    ROCKROBO_S6_MAXV,
-    ROCKROBO_S6_PURE,
-    ROCKROBO_S7,
-]
-MODELS_VACUUM_WITH_SEPARATE_MOP = [
-    ROCKROBO_S7,
-]
 
 MODELS_AIR_MONITOR = [
     MODEL_AIRQUALITYMONITOR_V1,
@@ -256,16 +192,6 @@ SERVICE_RESET_FILTER = "fan_reset_filter"
 SERVICE_SET_EXTRA_FEATURES = "fan_set_extra_features"
 SERVICE_SET_DRY = "set_dry"
 SERVICE_SET_MOTOR_SPEED = "fan_set_motor_speed"
-
-# Light Services
-SERVICE_SET_SCENE = "light_set_scene"
-SERVICE_SET_DELAYED_TURN_OFF = "light_set_delayed_turn_off"
-SERVICE_REMINDER_ON = "light_reminder_on"
-SERVICE_REMINDER_OFF = "light_reminder_off"
-SERVICE_NIGHT_LIGHT_MODE_ON = "light_night_light_mode_on"
-SERVICE_NIGHT_LIGHT_MODE_OFF = "light_night_light_mode_off"
-SERVICE_EYECARE_MODE_ON = "light_eyecare_mode_on"
-SERVICE_EYECARE_MODE_OFF = "light_eyecare_mode_off"
 
 # Remote Services
 SERVICE_LEARN = "remote_learn_command"
