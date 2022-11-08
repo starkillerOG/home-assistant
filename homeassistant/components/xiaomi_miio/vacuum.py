@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from functools import partial
 import logging
 from typing import Any
 
-from miio import DeviceException
 from miio.interfaces.vacuuminterface import VacuumState
 
 from homeassistant.components.vacuum import (
@@ -139,17 +137,6 @@ class XiaomiVacuum(
         """Get the list of available fan speed steps of the vacuum cleaner."""
         return list(self._fan_speed_presets)
 
-    async def _try_command(self, mask_error, func, *args, **kwargs):
-        """Call a vacuum command handling error messages."""
-        # TODO: why is this overloaded? Just to call async_refresh on successes?
-        try:
-            await self.hass.async_add_executor_job(partial(func, *args, **kwargs))
-            await self.coordinator.async_refresh()
-            return True
-        except DeviceException as exc:
-            _LOGGER.error(mask_error, exc)
-            return False
-
     async def async_start(self) -> None:
         """Start or resume the cleaning task."""
         await self._try_command("Unable to start the vacuum: %s", self._device.start)
@@ -231,7 +218,7 @@ class XiaomiVacuum(
         try:
             self._state = VACUUMSTATE_TO_HASS.get(vacstate)
         except KeyError:
-            _LOGGER.error("Unknown state: %s", vacstate)
+            _LOGGER.error("Unknown vacuum state: %s", vacstate)
             self._state = None
 
         super()._handle_coordinator_update()
