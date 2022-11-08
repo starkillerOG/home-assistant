@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from miio import DeviceStatus
+
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_MAC, CONF_TOKEN, CONF_UNIQUE_ID
@@ -31,6 +33,8 @@ async def async_get_config_entry_diagnostics(
     if coordinator := hass.data[DOMAIN][config_entry.entry_id].get(KEY_COORDINATOR):
         if isinstance(coordinator.data, dict):
             diagnostics_data["coordinator_data"] = coordinator.data
+        elif isinstance(coordinator.data, DeviceStatus):
+            diagnostics_data["coordinator_data"] = dict(coordinator.data.data)
         else:
             diagnostics_data["coordinator_data"] = repr(coordinator.data)
 
