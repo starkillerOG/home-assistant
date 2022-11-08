@@ -45,7 +45,7 @@ DEVICE_SETTINGS = {
 }
 DEVICE_CONFIG = vol.Schema({vol.Required(CONF_HOST): str}).extend(DEVICE_SETTINGS)
 DEVICE_MODEL_CONFIG = vol.Schema(
-    {vol.Required(CONF_MODEL): vol.In(DeviceFactory.supported_models())}
+    {vol.Required(CONF_MODEL): vol.In(DeviceFactory.supported_models().keys())}
 )
 DEVICE_CLOUD_CONFIG = vol.Schema(
     {
@@ -194,6 +194,7 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
                 return await self.async_step_cloud()
 
+        # TODO: accept all miio devices
         for device_model in DeviceFactory.supported_models():
             if name.startswith(device_model.replace(".", "-")):
                 unique_id = self.mac
@@ -400,9 +401,12 @@ class XiaomiMiioFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 flow_type = CONF_GATEWAY
 
         if flow_type is None:
-            for device_model in DeviceFactory.supported_models():
-                if self.model.startswith(device_model):
-                    flow_type = CONF_DEVICE
+            # TODO: clean up, we assume now that all devices are supported
+            _LOGGER.info(
+                "Got device info, assume supported: %s",
+                connect_device_class.device_info,
+            )
+            flow_type = CONF_DEVICE
 
         if flow_type is not None:
             return self.async_create_entry(
