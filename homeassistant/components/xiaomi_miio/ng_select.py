@@ -6,6 +6,7 @@ import logging
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
+from homeassistant.helpers.entity import EntityCategory
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,13 +28,14 @@ class XiaomiSelect(XiaomiMiioEntity, SelectEntity):
             None  # TODO we don't know the value, but the parent wants it?
         )
 
+        # TODO: This should always be CONFIG for settables and non-configurable?
+        category = EntityCategory(setting.extras.get("entity_category", "config"))
         self.entity_description = SelectEntityDescription(
             key=setting.id,
             name=setting.name,
             icon=setting.extras.get("icon"),
             device_class=setting.extras.get("device_class"),
-            entity_category=setting.extras.get("entity_category"),
-            # entity_category=EntityCategory.CONFIG,
+            entity_category=category,
         )
         self._attr_options = [x.name for x in self._choices]
 

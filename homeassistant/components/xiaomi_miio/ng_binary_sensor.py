@@ -9,6 +9,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
+from homeassistant.helpers.entity import EntityCategory
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,12 +28,14 @@ class XiaomiBinarySensor(XiaomiMiioEntity, BinarySensorEntity):
 
         super().__init__(device, entry, unique_id, coordinator)
 
+        # TODO: This should always be CONFIG for settables and non-configurable?
+        category = EntityCategory(sensor.extras.get("entity_category", "diagnostic"))
         description = BinarySensorEntityDescription(
             key=sensor.id,
             name=sensor.name,
             icon=sensor.extras.get("icon"),
             device_class=sensor.extras.get("device_class"),
-            entity_category=sensor.extras.get("entity_category"),
+            entity_category=category,
         )
 
         self.entity_description = description

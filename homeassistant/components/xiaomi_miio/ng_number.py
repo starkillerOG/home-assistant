@@ -4,6 +4,7 @@ from __future__ import annotations
 from homeassistant.components.number import NumberEntity, NumberEntityDescription
 from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
+from homeassistant.helpers.entity import EntityCategory
 
 
 class XiaomiNumber(XiaomiMiioEntity, NumberEntity):
@@ -20,12 +21,15 @@ class XiaomiNumber(XiaomiMiioEntity, NumberEntity):
         self._attr_native_value = self._extract_value_from_attribute(
             coordinator.data, setting.id
         )
+
+        # TODO: This should always be CONFIG for settables and non-configurable?
+        category = EntityCategory(setting.extras.get("entity_category", "config"))
         description = NumberEntityDescription(
             key=setting.id,
             name=setting.name,
             icon=setting.extras.get("icon"),
             device_class=setting.extras.get("device_class"),
-            entity_category=setting.extras.get("entity_category"),
+            entity_category=category,
             native_unit_of_measurement=setting.unit,
             native_min_value=setting.min_value,
             native_max_value=setting.max_value,

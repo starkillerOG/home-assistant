@@ -7,6 +7,7 @@ import logging
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
+from homeassistant.helpers.entity import EntityCategory
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +31,8 @@ class XiaomiSensor(XiaomiMiioEntity, SensorEntity):
 
         unique_id = f"{entry.unique_id}_sensor_{sensor.id}"
 
+        # TODO: This should always be CONFIG for settables and non-configurable?
+        category = EntityCategory(sensor.extras.get("entity_category", "diagnostic"))
         description = SensorEntityDescription(
             key=sensor.id,
             name=sensor.name,
@@ -37,7 +40,7 @@ class XiaomiSensor(XiaomiMiioEntity, SensorEntity):
             icon=sensor.extras.get("icon"),
             device_class=sensor.extras.get("device_class"),
             state_class=sensor.extras.get("state_class"),
-            entity_category=sensor.extras.get("entity_category"),
+            entity_category=category,
         )
         _LOGGER.debug("Adding sensor: %s", description)
         super().__init__(device, entry, unique_id, coordinator)
