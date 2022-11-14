@@ -1,42 +1,35 @@
-"""Support for Xiaomi Miio button entities."""
 from __future__ import annotations
-
-from typing import Callable
 
 from homeassistant.components.button import (
     ButtonDeviceClass,
     ButtonEntity,
     ButtonEntityDescription,
 )
-from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.components.xiaomi_miio.device import XiaomiCoordinatedMiioEntity
+from homeassistant.util import slugify
 
 
-class XiaomiButton(XiaomiMiioEntity, ButtonEntity):
-    """Representation of Xiaomi button."""
+class XiaomiButton(XiaomiCoordinatedMiioEntity, ButtonEntity):
 
     entity_description: ButtonEntityDescription
-    method: Callable
+    method: callable
 
     _attr_device_class = ButtonDeviceClass.RESTART
     _attr_has_entity_name = True
 
     def __init__(self, button, device, entry, coordinator):
         """Initialize the plug switch."""
-        self._name = button.name
+        self._name = name = button.name
         unique_id = f"{entry.unique_id}_button_{button.id}"
         self.method = button.method
 
         super().__init__(device, entry, unique_id, coordinator)
-
-        # TODO: This should always be CONFIG for settables and non-configurable?
-        category = EntityCategory(button.extras.get("entity_category", "config"))
         description = ButtonEntityDescription(
             key=button.id,
             name=button.name,
             icon=button.extras.get("icon"),
             device_class=button.extras.get("device_class"),
-            entity_category=category,
+            entity_category=button.extras.get("entity_category"),
         )
 
         self.entity_description = description
