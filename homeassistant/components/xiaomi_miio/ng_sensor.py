@@ -1,13 +1,20 @@
 """Support for Xiaomi Miio sensor entities."""
 from __future__ import annotations
+import datetime
+from enum import Enum
 
 from enum import Enum
 import logging
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+)
 from homeassistant.components.xiaomi_miio.device import XiaomiMiioEntity
 from homeassistant.core import callback
 from homeassistant.helpers.entity import EntityCategory
+from homeassistant.util import dt as dt_util
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,6 +48,7 @@ class XiaomiSensor(XiaomiMiioEntity, SensorEntity):
             device_class=sensor.extras.get("device_class"),
             state_class=sensor.extras.get("state_class"),
             entity_category=category,
+            entity_registry_enabled_default=sensor.extras.get("enabled_default", True),
         )
         _LOGGER.debug("Adding sensor: %s", description)
         super().__init__(device, entry, unique_id, coordinator)
@@ -64,11 +72,19 @@ class XiaomiSensor(XiaomiMiioEntity, SensorEntity):
         val = getattr(self.coordinator.data, self._property)
 
         if isinstance(val, Enum):
-            val = val.name
-
-        # TODO: check how to handle timestamps properly
-        # if(self.device_class == SensorDeviceClass.TIMESTAMP): ...
-        #     native_dt = dt_util.parse_datetime(val)
-        #      return native_dt.astimezone(dt_util.UTC)
+            return val.value
+        if (
+            self.device_class == SensorDeviceClass.TIMESTAMP
+            and val is not None
+            and (native_datetime := dt_util.parse_datetime(str(val)))
+            is not None
+        ):
+            return native_datetime.astimezone(dt_util.UTC)
+        if isinstance(val, datetime.timedelta):
+            return self._parse_time_delta(val)
+        if isinstance(val, datetime.time):
+            return self._parse_datetime_time(val)
+        if isinstance(val, datetime.datetime):
+            return self._parse_datetime_datetime(val)
 
         return val
