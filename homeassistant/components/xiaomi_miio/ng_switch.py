@@ -29,7 +29,7 @@ class XiaomiSwitch(XiaomiMiioEntity, SwitchEntity):
         # TODO: This should always be CONFIG for settables and non-configurable?
         category = EntityCategory(setting.extras.get("entity_category", "config"))
         description = SwitchEntityDescription(
-            key=setting.id,
+            key=setting.property,
             name=name,
             icon=setting.extras.get("icon"),
             device_class=setting.extras.get("device_class"),
