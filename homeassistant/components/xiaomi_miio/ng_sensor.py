@@ -72,7 +72,7 @@ class XiaomiSensor(XiaomiMiioEntity, SensorEntity):
         val = getattr(self.coordinator.data, self._property)
 
         if isinstance(val, Enum):
-            return val.value
+            return val.name
         if (
             self.device_class == SensorDeviceClass.TIMESTAMP
             and val is not None
