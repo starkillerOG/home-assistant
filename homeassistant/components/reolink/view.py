@@ -25,8 +25,11 @@ def async_setup_views(hass: HomeAssistant):
     hass.http.register_view(ReoLinkCameraDownloadView(component))
 
 
-class ReolinkCameraView(CameraView):
-    """Base Reolink Camera View."""
+class ReoLinkCameraDownloadView(CameraView):
+    """Download viewer to handle camera recordings."""
+
+    url = "/api/reolink_download/{entity_id}/{filename:.*}"
+    name = "api:reolink:download"
 
     async def get(
         self, request: web.Request, entity_id: str, *args, **kwargs: Any
@@ -47,23 +50,6 @@ class ReolinkCameraView(CameraView):
             *request.get("get_args", ()),
             **request.get("get_kwargs", {}),
         )
-
-    async def _handle_reolink(
-        self,
-        request: web.Request,
-        camera: camera_module.ReolinkCamera,
-        *args: Any,
-        **kwargs: Any,
-    ) -> web.StreamResponse:
-        """Handle the camera request."""
-        raise NotImplementedError()
-
-
-class ReoLinkCameraDownloadView(ReolinkCameraView):
-    """Download viewer to handle camera recordings."""
-
-    url = "/api/reolink_download/{entity_id}/{filename:.*}"
-    name = "api:reolink:download"
 
     async def _handle_reolink(
         self,

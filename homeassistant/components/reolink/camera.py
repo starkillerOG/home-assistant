@@ -141,60 +141,6 @@ class ReolinkCamera(ReolinkChannelCoordinatorEntity, Camera):
         """Return a still image response from the camera."""
         return await self._host.api.get_snapshot(self._channel, self._stream)
 
-    async def async_get_camera_time(self):
-        """Get camera time."""
-        if now := self._host.api.time():
-            return now
-        now = await self._host.api.async_get_time()
-        return now
-
-    async def async_get_timezone(self):
-        """Get camera tzinfo."""
-        if tz := self._host.api.timezone():
-            return tz
-        tz = (await self.async_get_camera_time()).tzinfo
-        return tz
-
-    async def handle_async_download_search(
-        self,
-        start: dt.datetime | dt.date | None = None,
-        end: dt.datetime | dt.date | None = None,
-        status_only: bool = False,
-    ):
-        """Get Camera VODs between start and end date."""
-
-        if start is None:
-            _start = await self.async_get_camera_time()
-        elif not isinstance(start, dt.datetime):
-            ct = await self.async_get_camera_time()
-            _start = dt.datetime.combine(
-                start, ct.time() if ct.date() == start else dt.time.min, ct.tzinfo
-            )
-        elif start.tzinfo is None:
-            _start = start.replace(tzinfo=await self.async_get_timezone())
-        else:
-            _start = start
-
-        if end is None:
-            _end = _start
-            _start = dt.datetime.combine(_start.date(), dt.time.min, _start.tzinfo)
-        elif not isinstance(end, dt.datetime):
-            ct = await self.async_get_camera_time()
-            _end = dt.datetime.combine(
-                end, ct.time() if ct.date() == end else dt.time.max, ct.tzinfo
-            )
-        elif end.tzinfo is None:
-            _end = end.replace(tzinfo=_start.tzinfo)
-        else:
-            _end = end
-
-        if _start > _end:
-            [_start, _end] = [_end, _start]
-
-        return await self._host.api.request_vod_files(
-            self._channel, _start, _end, status_only, "main"  # self._stream
-        )
-
     async def handle_async_download_stream(self, filename: str) -> web.StreamResponse:
         """Generate a Download Response to a requested file."""
 
