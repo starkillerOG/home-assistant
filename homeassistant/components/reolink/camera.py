@@ -1,7 +1,6 @@
 """Component providing support for Reolink IP cameras."""
 from __future__ import annotations
 
-import datetime as dt
 import logging
 
 from aiohttp import web

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import datetime as dt
+import logging
 
-from homeassistant.components.media_player import BrowseError, MediaClass, MediaType
+from homeassistant.components.camera import DynamicStreamSettings
+from homeassistant.components.media_player import MediaClass, MediaType
 from homeassistant.components.media_source.error import Unresolvable
 from homeassistant.components.media_source.models import (
     BrowseMediaSource,
@@ -12,15 +14,14 @@ from homeassistant.components.media_source.models import (
     MediaSourceItem,
     PlayMedia,
 )
-from homeassistant.core import HomeAssistant, callback
-
-from .camera import ReolinkCamera
-from .const import DOMAIN
-from .view import ReoLinkCameraDownloadView, _async_get_camera_component
 from homeassistant.components.stream import create_stream
-from homeassistant.components.camera import DynamicStreamSettings
-from homeassistant.helpers import entity_registry as er, device_registry as dr
-from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
+
 
 async def async_get_media_source(hass: HomeAssistant) -> ReolinkVODMediaSource:
     """Set up camera media source."""
@@ -40,15 +41,16 @@ class ReolinkVODMediaSource(MediaSource):
 
     async def async_resolve_media(self, item: MediaSourceItem) -> PlayMedia:
         """Resolve media to a url."""
-        print(item)
         if item.domain != DOMAIN:
-            raise Unresolvable("Unknown domain.")
+            raise Unresolvable(f"Unknown domain '{item.domain}' of media item.")
         if not isinstance(item.identifier, str):
-            raise Unresolvable("Could not resolve identifier.")
-        
+            raise Unresolvable(
+                f"Could not resolve identifier '{item.identifier}' of media item."
+            )
+
         identifier = item.identifier.split("/")
         if identifier[0] != "FILE":
-            raise Unresolvable("Unknown item")
+            raise Unresolvable(f"Unknown media item '{item.identifier}'.")
 
         config_entry_id = identifier[1]
         channel = int(identifier[2])
@@ -56,6 +58,10 @@ class ReolinkVODMediaSource(MediaSource):
 
         host = self.data[config_entry_id].host
         mime_type, url = await host.api.get_vod_source(channel, filename, stream="main")
+        url_log = f"{url.split('&user=')[0]}&user=xxxxx&password=xxxxx"
+        _LOGGER.debug(
+            "Opening VOD stream from %s: %s", host.api.camera_name(channel), url_log
+        )
 
         stream = create_stream(self.hass, url, {}, DynamicStreamSettings())
         stream.add_provider("hls", timeout=3600)
@@ -65,13 +71,6 @@ class ReolinkVODMediaSource(MediaSource):
             stream_url,
             mime_type,
         )
-        #FOR A LATER PR, add download option.
-        #return PlayMedia(
-        #    ReoLinkCameraDownloadView.url.replace(":.*}", "}").format(
-        #        entity_id=entity_id, filename=file_name
-        #    ),
-        #    "video/mp4",
-        #)
 
     async def async_browse_media(
         self,
@@ -79,13 +78,15 @@ class ReolinkVODMediaSource(MediaSource):
     ) -> BrowseMediaSource:
         """Return media."""
         if item.domain != DOMAIN:
-            raise Unresolvable("Unknown domain.")
-        
+            raise Unresolvable(f"Unknown domain '{item.domain}' during browsing.")
+
         if item.identifier is None:
             return await self._generate_root()
-        
+
         if not isinstance(item.identifier, str):
-            raise Unresolvable("Could not resolve identifier.")
+            raise Unresolvable(
+                f"Could not resolve identifier '{item.identifier}' during browsing."
+            )
 
         identifier = item.identifier.split("/")
         item_type = identifier[0]
@@ -100,14 +101,16 @@ class ReolinkVODMediaSource(MediaSource):
             year = int(identifier[3])
             month = int(identifier[4])
             day = int(identifier[5])
-            return await self._generate_camera_files(config_entry_id, channel, year, month, day)
+            return await self._generate_camera_files(
+                config_entry_id, channel, year, month, day
+            )
 
-        raise BrowseError("Unknown item")
+        raise Unresolvable(f"Unknown media item '{item.identifier}' during browsing.")
 
     async def _generate_root(self):
+        """Return all available reolink cameras as root browsing structure."""
         children = []
 
-        # Get all reolink cameras and there identification
         entity_reg = er.async_get(self.hass)
         device_reg = dr.async_get(self.hass)
         for config_entry_id in self.data:
@@ -116,14 +119,18 @@ class ReolinkVODMediaSource(MediaSource):
             for entity in entities:
                 if entity.disabled or not entity.entity_id.startswith("camera."):
                     continue
-                
+
                 ch = entity.unique_id.split("_")[1]
                 if ch in channels:
                     continue
                 channels.append(ch)
-                
+
                 device = device_reg.async_get(entity.device_id)
-                device_name = device.name_by_user if device.name_by_user is not None else device.name
+                device_name = (
+                    device.name_by_user
+                    if device.name_by_user is not None
+                    else device.name
+                )
 
                 children.append(
                     BrowseMediaSource(
@@ -150,9 +157,10 @@ class ReolinkVODMediaSource(MediaSource):
         )
 
     async def _generate_camera_days(self, config_entry_id: str, channel: int):
+        """Return all days on which recordings are available for a reolink camera."""
         host = self.data[config_entry_id].host
 
-        # we want today of the camera, not necessarily today of the server
+        # We want today of the camera, not necessarily today of the server
         now = host.api.time()
         if not now:
             now = await host.api.async_get_time()
@@ -160,7 +168,15 @@ class ReolinkVODMediaSource(MediaSource):
         end = now
 
         children = []
-        (statuses, _) = await host.api.request_vod_files(channel, start, end, status_only=True, stream="main")
+        _LOGGER.debug(
+            "Requesting recording days of %s from %s to %s",
+            host.api.camera_name(channel),
+            start,
+            end,
+        )
+        (statuses, _) = await host.api.request_vod_files(
+            channel, start, end, status_only=True, stream="main"
+        )
         for status in statuses:
             for day in status.days:
                 children.append(
@@ -186,14 +202,26 @@ class ReolinkVODMediaSource(MediaSource):
             children=children,
         )
 
-    async def _generate_camera_files(self, config_entry_id: str, channel: int, year: int, month: int, day: int):
+    async def _generate_camera_files(
+        self, config_entry_id: str, channel: int, year: int, month: int, day: int
+    ):
+        """Return all recording files on a specific day of a Reolink camera."""
         host = self.data[config_entry_id].host
 
         start = dt.datetime(year, month, day, hour=0, minute=0, second=0)
         end = dt.datetime(year, month, day, hour=23, minute=59, second=59)
 
         children = []
-        (_, vod_files) = await host.api.request_vod_files(channel, start, end, stream="main")
+        _LOGGER.debug(
+            "Requesting VODs of %s on %s/%s/%s",
+            host.api.camera_name(channel),
+            year,
+            month,
+            day,
+        )
+        (_, vod_files) = await host.api.request_vod_files(
+            channel, start, end, stream="main"
+        )
         for file in vod_files:
             file_name = f"{file.start_time.time()} {file.duration}"
             if file.triggers != file.triggers.NONE:
