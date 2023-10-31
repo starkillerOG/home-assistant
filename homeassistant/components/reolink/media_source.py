@@ -248,7 +248,7 @@ class ReolinkVODMediaSource(MediaSource):
             identifier=f"FILES/{config_entry_id}/{channel}",
             media_class=MediaClass.CHANNEL,
             media_content_type=MediaType.PLAYLIST,
-            title=host.api.camera_name(channel),
+            title=f"{host.api.camera_name(channel)} {year}/{month}/{day}",
             can_play=False,
             can_expand=True,
             children=children,
