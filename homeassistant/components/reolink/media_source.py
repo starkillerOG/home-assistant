@@ -54,10 +54,11 @@ class ReolinkVODMediaSource(MediaSource):
 
         config_entry_id = identifier[1]
         channel = int(identifier[2])
-        filename = identifier[3]
+        stream_res = identifier[3]
+        filename = identifier[4]
 
         host = self.data[config_entry_id].host
-        mime_type, url = await host.api.get_vod_source(channel, filename, stream="main")
+        mime_type, url = await host.api.get_vod_source(channel, filename, stream_res)
         url_log = f"{url.split('&user=')[0]}&user=xxxxx&password=xxxxx"
         _LOGGER.debug(
             "Opening VOD stream from %s: %s", host.api.camera_name(channel), url_log
@@ -94,15 +95,21 @@ class ReolinkVODMediaSource(MediaSource):
         if item_type == "CAM":
             config_entry_id = identifier[1]
             channel = int(identifier[2])
-            return await self._generate_camera_days(config_entry_id, channel)
+            return await self._generate_resolution_select(config_entry_id, channel)
+        if item_type == "RES":
+            config_entry_id = identifier[1]
+            channel = int(identifier[2])
+            stream = identifier[3]
+            return await self._generate_camera_days(config_entry_id, channel, stream)
         if item_type == "DAY":
             config_entry_id = identifier[1]
             channel = int(identifier[2])
-            year = int(identifier[3])
-            month = int(identifier[4])
-            day = int(identifier[5])
+            stream = identifier[3]
+            year = int(identifier[4])
+            month = int(identifier[5])
+            day = int(identifier[6])
             return await self._generate_camera_files(
-                config_entry_id, channel, year, month, day
+                config_entry_id, channel, stream, year, month, day
             )
 
         raise Unresolvable(f"Unknown media item '{item.identifier}' during browsing.")
@@ -156,7 +163,54 @@ class ReolinkVODMediaSource(MediaSource):
             children=children,
         )
 
-    async def _generate_camera_days(self, config_entry_id: str, channel: int):
+    async def _generate_resolution_select(self, config_entry_id: str, channel: int):
+        """Allow the user to select the high or low playback resolution, (low loads faster)."""
+        host = self.data[config_entry_id].host
+
+        main_enc = await host.api.get_encoding(channel, "main")
+        if main_enc == "h265":
+            _LOGGER.debug(
+                "Reolink camera %s uses h265 encoding for main stream,"
+                "playback only possible using sub stream",
+                host.api.camera_name(channel),
+            )
+            return await self._generate_camera_days(config_entry_id, channel, "sub")
+
+        children = [
+            BrowseMediaSource(
+                domain=DOMAIN,
+                identifier=f"RES/{config_entry_id}/{channel}/sub",
+                media_class=MediaClass.CHANNEL,
+                media_content_type=MediaType.PLAYLIST,
+                title="Low resolution",
+                can_play=False,
+                can_expand=True,
+            ),
+            BrowseMediaSource(
+                domain=DOMAIN,
+                identifier=f"RES/{config_entry_id}/{channel}/main",
+                media_class=MediaClass.CHANNEL,
+                media_content_type=MediaType.PLAYLIST,
+                title="High resolution",
+                can_play=False,
+                can_expand=True,
+            ),
+        ]
+
+        return BrowseMediaSource(
+            domain=DOMAIN,
+            identifier=f"RESs/{config_entry_id}/{channel}",
+            media_class=MediaClass.CHANNEL,
+            media_content_type=MediaType.PLAYLIST,
+            title=host.api.camera_name(channel),
+            can_play=False,
+            can_expand=True,
+            children=children,
+        )
+
+    async def _generate_camera_days(
+        self, config_entry_id: str, channel: int, stream: str
+    ):
         """Return all days on which recordings are available for a reolink camera."""
         host = self.data[config_entry_id].host
 
@@ -175,14 +229,14 @@ class ReolinkVODMediaSource(MediaSource):
             end,
         )
         (statuses, _) = await host.api.request_vod_files(
-            channel, start, end, status_only=True, stream="main"
+            channel, start, end, status_only=True, stream=stream
         )
         for status in statuses:
             for day in status.days:
                 children.append(
                     BrowseMediaSource(
                         domain=DOMAIN,
-                        identifier=f"DAY/{config_entry_id}/{channel}/{status.year}/{status.month}/{day}",
+                        identifier=f"DAY/{config_entry_id}/{channel}/{stream}/{status.year}/{status.month}/{day}",
                         media_class=MediaClass.DIRECTORY,
                         media_content_type=MediaType.PLAYLIST,
                         title=f"{status.year}/{status.month}/{day}",
@@ -190,20 +244,27 @@ class ReolinkVODMediaSource(MediaSource):
                         can_expand=True,
                     )
                 )
+        res_name = "High res." if stream == "main" else "Low res."
 
         return BrowseMediaSource(
             domain=DOMAIN,
-            identifier=f"DAYS/{config_entry_id}/{channel}",
+            identifier=f"DAYS/{config_entry_id}/{channel}/{stream}",
             media_class=MediaClass.CHANNEL,
             media_content_type=MediaType.PLAYLIST,
-            title=host.api.camera_name(channel),
+            title=f"{host.api.camera_name(channel)} {res_name}",
             can_play=False,
             can_expand=True,
             children=children,
         )
 
     async def _generate_camera_files(
-        self, config_entry_id: str, channel: int, year: int, month: int, day: int
+        self,
+        config_entry_id: str,
+        channel: int,
+        stream: str,
+        year: int,
+        month: int,
+        day: int,
     ):
         """Return all recording files on a specific day of a Reolink camera."""
         host = self.data[config_entry_id].host
@@ -220,7 +281,7 @@ class ReolinkVODMediaSource(MediaSource):
             day,
         )
         (_, vod_files) = await host.api.request_vod_files(
-            channel, start, end, stream="main"
+            channel, start, end, stream=stream
         )
         for file in vod_files:
             file_name = f"{file.start_time.time()} {file.duration}"
@@ -234,7 +295,7 @@ class ReolinkVODMediaSource(MediaSource):
             children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
-                    identifier=f"FILE/{config_entry_id}/{channel}/{file.file_name}",
+                    identifier=f"FILE/{config_entry_id}/{channel}/{stream}/{file.file_name}",
                     media_class=MediaClass.VIDEO,
                     media_content_type=MediaType.VIDEO,
                     title=file_name,
@@ -243,12 +304,13 @@ class ReolinkVODMediaSource(MediaSource):
                 )
             )
 
+        res_name = "High res." if stream == "main" else "Low res."
         return BrowseMediaSource(
             domain=DOMAIN,
-            identifier=f"FILES/{config_entry_id}/{channel}",
+            identifier=f"FILES/{config_entry_id}/{channel}/{stream}",
             media_class=MediaClass.CHANNEL,
             media_content_type=MediaType.PLAYLIST,
-            title=f"{host.api.camera_name(channel)} {year}/{month}/{day}",
+            title=f"{host.api.camera_name(channel)} {res_name} {year}/{month}/{day}",
             can_play=False,
             can_expand=True,
             children=children,
