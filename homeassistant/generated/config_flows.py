@@ -312,6 +312,7 @@ FLOWS = {
         "moon",
         "mopeka",
         "motion_blinds",
+        "motionblinds_ble",
         "motioneye",
         "motionmount",
         "mqtt",
