@@ -121,6 +121,7 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
         self._upnp_server: AiohttpNotifyServer | None = None
 
         # Smart Things cloud
+        self._st_error = False
         self._smart_things = None
         if config_entry.options.get(CONF_ST_TOKEN) and config_entry.options.get(
             CONF_ST_DEVICE_ID
@@ -188,6 +189,13 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
                 await self._smart_things.async_device_update(False)
         except (TimeoutError, ClientConnectionError, ClientResponseError) as exc:
             LOGGER.debug("%s - SmartThings error: %s", self.entity_id, exc)
+            if not self._st_error:
+                LOGGER.error("Error updating %s using SmartThings", self.entity_id)
+            self._st_error = True
+            return
+
+        self._st_error = False
+        return
 
     async def async_update(self) -> None:
         """Update state of device."""

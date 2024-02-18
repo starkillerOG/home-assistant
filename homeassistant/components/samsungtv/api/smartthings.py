@@ -556,7 +556,7 @@ class SmartThingsTV:
 
         await self._async_send_command(data_cmd)
 
-    async def async_select_source(self, source):
+    async def async_select_source(self, source: str) -> None:
         """Select source"""
         # if source not in self._source_list:
         #     return

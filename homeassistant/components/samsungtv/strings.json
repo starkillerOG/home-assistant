@@ -47,5 +47,15 @@
     "trigger_type": {
       "samsungtv.turn_on": "Device is requested to turn on"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "smart_things_token": "SmartThings generated token",
+          "smart_things_device_id": "SmartThings device ID"
+        }
+      }
+    }
   }
 }
