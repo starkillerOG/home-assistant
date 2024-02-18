@@ -49,6 +49,9 @@ from .const import (
     UPNP_SVC_RENDERING_CONTROL,
 )
 
+CONF_ST_TOKEN = "smart_things_token"
+CONF_ST_DEVICE_ID = "smart_things_device_id"
+
 DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str, vol.Required(CONF_NAME): str})
 
 
@@ -89,6 +92,30 @@ def _mac_is_same_with_incorrect_formatting(
         current_formatted_mac == formatted_mac
         and current_unformatted_mac != current_formatted_mac
     )
+    def __init__(self, config_entry):
+        """Initialize SamsungTVOptionsFlowHandler."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the Samsung TV options."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_ST_TOKEN,
+                    ): str,
+                    vol.Optional(
+                        CONF_ST_DEVICE_ID,
+                    ): str,
+                }
+            ),
+        )
 
 
 class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -115,6 +142,14 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._bridge: SamsungTVBridge | None = None
         self._device_info: dict[str, Any] | None = None
         self._authenticator: SamsungTVEncryptedWSAsyncAuthenticator | None = None
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> SamsungTVOptionsFlowHandler:
+        """Options callback for Samsung TV."""
+        return SamsungTVOptionsFlowHandler(config_entry)
 
     def _base_config_entry(self) -> dict[str, Any]:
         """Generate the base config entry without the method."""
