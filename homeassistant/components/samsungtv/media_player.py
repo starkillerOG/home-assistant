@@ -6,7 +6,7 @@ from collections.abc import Coroutine, Sequence
 from datetime import timedelta
 from typing import Any
 
-from aiohttp import ClientConnectionError, ClientResponseError
+from aiohttp import ClientConnectionError, ClientResponseError, ClientSession
 from async_upnp_client.aiohttp import AiohttpNotifyServer, AiohttpSessionRequester
 from async_upnp_client.client import UpnpDevice, UpnpService, UpnpStateVariable
 from async_upnp_client.client_factory import UpnpFactory
@@ -72,7 +72,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Samsung TV from a config entry."""
     bridge = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([SamsungTVDevice(bridge, entry)], True)
+    session = async_get_clientsession(hass)
+    async_add_entities([SamsungTVDevice(bridge, entry, session)], True)
 
 
 class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
@@ -86,6 +87,7 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
         self,
         bridge: SamsungTVBridge,
         config_entry: ConfigEntry,
+        session: ClientSession,
     ) -> None:
         """Initialize the Samsung device."""
         super().__init__(bridge=bridge, config_entry=config_entry)
@@ -127,7 +129,7 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
                 api_key=config_entry.options[CONF_ST_TOKEN],
                 device_id=config_entry.options[CONF_ST_DEVICE_ID],
                 use_channel_info=False,
-                session=async_get_clientsession(self.hass),
+                session=session,
             )
 
     @property
