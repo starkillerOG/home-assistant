@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Coroutine, Sequence
-from typing import Any
 from datetime import timedelta
+from typing import Any
 
-import async_timeout
+from aiohttp import ClientConnectionError, ClientResponseError
 from async_upnp_client.aiohttp import AiohttpNotifyServer, AiohttpSessionRequester
 from async_upnp_client.client import UpnpDevice, UpnpService, UpnpStateVariable
 from async_upnp_client.client_factory import UpnpFactory
@@ -30,7 +30,6 @@ from homeassistant.components.media_player import (
     MediaPlayerState,
     MediaType,
 )
-from homeassistant.util import Throttle
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntry
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant, callback
@@ -38,15 +37,14 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.trigger import PluggableAction
+from homeassistant.util import Throttle
 
-from aiohttp import ClientConnectionError, ClientResponseError, ClientSession
-
+from .api.smartthings import SmartThingsTV
 from .bridge import SamsungTVBridge, SamsungTVWSBridge
+from .config_flow import CONF_ST_DEVICE_ID, CONF_ST_TOKEN
 from .const import CONF_SSDP_RENDERING_CONTROL_LOCATION, DOMAIN, LOGGER
 from .entity import SamsungTVEntity
 from .triggers.turn_on import async_get_turn_on_trigger
-from .config_flow import CONF_ST_TOKEN, CONF_ST_DEVICE_ID
-from .api.smartthings import SmartThingsTV
 
 SOURCES = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
 
@@ -119,10 +117,12 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
 
         self._dmr_device: DmrDevice | None = None
         self._upnp_server: AiohttpNotifyServer | None = None
-        
+
         # Smart Things cloud
         self._smart_things = None
-        if config_entry.options.get(CONF_ST_TOKEN) and config_entry.options.get(CONF_ST_DEVICE_ID):
+        if config_entry.options.get(CONF_ST_TOKEN) and config_entry.options.get(
+            CONF_ST_DEVICE_ID
+        ):
             self._smart_things = SmartThingsTV(
                 api_key=config_entry.options[CONF_ST_TOKEN],
                 device_id=config_entry.options[CONF_ST_DEVICE_ID],
@@ -143,7 +143,8 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
         self._attr_source_list = list(SOURCES)
         if self._smart_things:
             st_sources = self._smart_things.source_list
-            if "digitalTv" in st_sources: st_sources.remove("digitalTv")
+            if "digitalTv" in st_sources:
+                st_sources.remove("digitalTv")
             self._attr_source_list.extend(st_sources)
         if app_list := self._app_list:
             self._attr_source_list.extend(app_list)
@@ -174,17 +175,16 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
         await self._async_shutdown_dmr()
 
     @Throttle(MIN_TIME_BETWEEN_ST_UPDATE)
-    async def _async_st_update(self, **kwargs) -> bool | None:
+    async def _async_st_update(self) -> None:
         """Update SmartThings state of device."""
+        if not self._smart_things:
+            return
+
         try:
-            async with async_timeout.timeout(ST_UPDATE_TIMEOUT):
+            async with asyncio.timeout(ST_UPDATE_TIMEOUT):
                 await self._smart_things.async_device_update(False)
-        except (
-            asyncio.TimeoutError,
-            ClientConnectionError,
-            ClientResponseError,
-        ) as exc:
-            _LOGGER.debug("%s - SmartThings error: %s", self.entity_id, exc)
+        except (TimeoutError, ClientConnectionError, ClientResponseError) as exc:
+            LOGGER.debug("%s - SmartThings error: %s", self.entity_id, exc)
 
     async def async_update(self) -> None:
         """Update state of device."""
