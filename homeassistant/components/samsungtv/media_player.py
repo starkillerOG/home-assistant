@@ -145,9 +145,10 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
         self._attr_source_list = list(SOURCES)
         if self._smart_things:
             st_sources = self._smart_things.source_list
-            if "digitalTv" in st_sources:
-                st_sources.remove("digitalTv")
-            self._attr_source_list.extend(st_sources)
+            if isinstance(st_sources, list):
+                if "digitalTv" in st_sources:
+                    st_sources.remove("digitalTv")
+                self._attr_source_list.extend(st_sources)
         if app_list := self._app_list:
             self._attr_source_list.extend(app_list)
 
