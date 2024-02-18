@@ -92,6 +92,9 @@ def _mac_is_same_with_incorrect_formatting(
         current_formatted_mac == formatted_mac
         and current_unformatted_mac != current_formatted_mac
     )
+class SamsungTVOptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle Samsung TV options."""
+
     def __init__(self, config_entry):
         """Initialize SamsungTVOptionsFlowHandler."""
         self.config_entry = config_entry
