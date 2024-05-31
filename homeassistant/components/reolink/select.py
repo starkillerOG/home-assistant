@@ -111,7 +111,7 @@ SELECT_ENTITIES = (
         cmd_key="GetPowerLed",
         translation_key="status_led",
         entity_category=EntityCategory.CONFIG,
-        get_options=[state.name for state in StatusLedEnum],
+        get_options==lambda api, ch: api.doorbell_led_list(ch),
         supported=lambda api, ch: api.supported(ch, "doorbell_led"),
         value=lambda api, ch: StatusLedEnum(api.doorbell_led(ch)).name,
         method=lambda api, ch, name: api.set_status_led(ch, StatusLedEnum[name].value),
