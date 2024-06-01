@@ -114,7 +114,9 @@ SELECT_ENTITIES = (
         get_options=lambda api, ch: api.doorbell_led_list(ch),
         supported=lambda api, ch: api.supported(ch, "doorbell_led"),
         value=lambda api, ch: StatusLedEnum(api.doorbell_led(ch)).name,
-        method=lambda api, ch, name: api.set_status_led(ch, StatusLedEnum[name].value, doorbell=True),
+        method=lambda api, ch, name: (
+            api.set_status_led(ch, StatusLedEnum[name].value, doorbell=True)
+        ),
     ),
 )
 
