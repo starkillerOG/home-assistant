@@ -109,7 +109,7 @@ SELECT_ENTITIES = (
     ReolinkSelectEntityDescription(
         key="status_led",
         cmd_key="GetPowerLed",
-        translation_key="status_led",
+        translation_key="doorbell_led",
         entity_category=EntityCategory.CONFIG,
         get_options=lambda api, ch: api.doorbell_led_list(ch),
         supported=lambda api, ch: api.supported(ch, "doorbell_led"),
