@@ -8,7 +8,7 @@ from reolink_aio.exceptions import ReolinkError
 from homeassistant.components.camera import async_get_image, async_get_stream_source
 from homeassistant.components.reolink import const
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import Platform
+from homeassistant.const import Platform, STATE_IDLE
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
@@ -27,12 +27,12 @@ async def test_camera(
 ) -> None:
     """Test camera entity with fluent."""
     with patch("homeassistant.components.reolink.PLATFORMS", [Platform.CAMERA]):
-        assert await hass.config_entries.async_setup(config_entry.entry_id) is True
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state is ConfigEntryState.LOADED
 
     entity_id = f"{Platform.CAMERA}.{TEST_NVR_NAME}_fluent"
-    assert hass.states.is_state(entity_id, "idle")
+    assert hass.states.get(entity_id).state == STATE_IDLE
 
     # check getting a image from the camera
     reolink_connect.get_snapshot.return_value = b"image"
@@ -69,8 +69,8 @@ async def test_camera_no_stream_source(
     reolink_connect.model = TEST_DUO_MODEL
     reolink_connect.get_stream_source.return_value = None
     with patch("homeassistant.components.reolink.PLATFORMS", [Platform.CAMERA]):
-        assert await hass.config_entries.async_setup(config_entry.entry_id) is True
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state is ConfigEntryState.LOADED
 
-    assert hass.states.is_state(entity_id, "idle")
+    assert hass.states.get(entity_id).state == STATE_IDLE

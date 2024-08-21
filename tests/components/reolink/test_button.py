@@ -26,7 +26,7 @@ async def test_button(
 ) -> None:
     """Test button entity with ptz up."""
     with patch("homeassistant.components.reolink.PLATFORMS", [Platform.BUTTON]):
-        assert await hass.config_entries.async_setup(config_entry.entry_id) is True
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state is ConfigEntryState.LOADED
 
@@ -90,7 +90,7 @@ async def test_host_button(
     )
 
     with patch("homeassistant.components.reolink.PLATFORMS", [Platform.BUTTON]):
-        assert await hass.config_entries.async_setup(config_entry.entry_id) is True
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state is ConfigEntryState.LOADED
 

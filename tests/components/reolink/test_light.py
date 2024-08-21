@@ -31,7 +31,7 @@ async def test_light(
     reolink_connect.whiteled_brightness.return_value = 100
 
     with patch("homeassistant.components.reolink.PLATFORMS", [Platform.LIGHT]):
-        assert await hass.config_entries.async_setup(config_entry.entry_id) is True
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state is ConfigEntryState.LOADED
 
@@ -110,7 +110,7 @@ async def test_light_brightness_none(
     reolink_connect.whiteled_brightness.return_value = None
 
     with patch("homeassistant.components.reolink.PLATFORMS", [Platform.LIGHT]):
-        assert await hass.config_entries.async_setup(config_entry.entry_id) is True
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state is ConfigEntryState.LOADED
 
