@@ -8,7 +8,7 @@ from reolink_aio.exceptions import ReolinkError
 from homeassistant.components.camera import async_get_image, async_get_stream_source
 from homeassistant.components.reolink import const
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import Platform, STATE_IDLE
+from homeassistant.const import STATE_IDLE, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
