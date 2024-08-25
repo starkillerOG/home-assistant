@@ -519,9 +519,7 @@ class ReolinkHost:
             )
             if sub_type == SubType.push:
                 await self.subscribe()
-            else:
-                await self._api.subscribe(self._webhook_url, sub_type)
-            return
+                return
 
         timer = self._api.renewtimer(sub_type)
         _LOGGER.debug(
