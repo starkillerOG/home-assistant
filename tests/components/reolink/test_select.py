@@ -106,8 +106,8 @@ async def test_chime_select(
     hass: HomeAssistant,
     freezer: FrozenDateTimeFactory,
     config_entry: MockConfigEntry,
-    test_chime: Chime,
     reolink_connect: MagicMock,
+    test_chime: Chime,
     entity_registry: er.EntityRegistry,
 ) -> None:
     """Test chime select entity."""

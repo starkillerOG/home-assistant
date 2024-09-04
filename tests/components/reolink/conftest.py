@@ -155,7 +155,7 @@ def config_entry(hass: HomeAssistant) -> MockConfigEntry:
     return config_entry
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def test_chime(reolink_connect: MagicMock) -> None:
     """Mock a reolink chime."""
     TEST_CHIME = Chime(
