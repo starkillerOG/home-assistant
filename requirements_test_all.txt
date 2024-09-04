@@ -605,7 +605,7 @@ dbus-fast==2.24.0
 debugpy==1.8.1
 
 # homeassistant.components.ecovacs
-deebot-client==8.3.0
+deebot-client==8.4.0
 
 # homeassistant.components.ihc
 # homeassistant.components.namecheapdns
@@ -934,7 +934,7 @@ hole==0.8.0
 holidays==0.56
 
 # homeassistant.components.frontend
-home-assistant-frontend==20240903.1
+home-assistant-frontend==20240904.0
 
 # homeassistant.components.conversation
 home-assistant-intents==2024.8.29
@@ -1030,7 +1030,7 @@ kegtron-ble==0.4.0
 knocki==0.3.1
 
 # homeassistant.components.knx
-knx-frontend==2024.8.9.225351
+knx-frontend==2024.9.4.64538
 
 # homeassistant.components.konnected
 konnected==1.2.0
@@ -2349,7 +2349,7 @@ wyoming==1.5.4
 xbox-webapi==2.0.11
 
 # homeassistant.components.xiaomi_ble
-xiaomi-ble==0.30.2
+xiaomi-ble==0.31.1
 
 # homeassistant.components.knx
 xknx==3.1.1

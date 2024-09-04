@@ -559,7 +559,7 @@ async def test_port_repair_issue(
     await hass.async_block_till_done()
 
     assert (DOMAIN, "enable_port") in issue_registry.issues
-    
+
     reolink_connect.set_net_port.side_effect = None
 
 
