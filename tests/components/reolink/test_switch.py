@@ -155,6 +155,8 @@ async def test_switch(
             {ATTR_ENTITY_ID: entity_id},
             blocking=True,
         )
+        
+    reolink_connect.set_recording.side_effect = None
 
 
 async def test_host_switch(
@@ -218,6 +220,7 @@ async def test_host_switch(
             blocking=True,
         )
 
+    reolink_connect.set_recording.side_effect = None
 
 async def test_chime_switch(
     hass: HomeAssistant,
@@ -279,3 +282,5 @@ async def test_chime_switch(
             {ATTR_ENTITY_ID: entity_id},
             blocking=True,
         )
+
+    test_chime.set_option.side_effect = None

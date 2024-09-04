@@ -345,3 +345,5 @@ async def test_browsing_not_loaded(
     assert browse.title == "Reolink"
     assert browse.identifier is None
     assert len(browse.children) == 1
+
+    reolink_connect.get_host_data.side_effect = None

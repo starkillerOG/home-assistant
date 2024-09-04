@@ -224,6 +224,9 @@ async def test_config_flow_errors(
         CONF_PROTOCOL: DEFAULT_PROTOCOL,
     }
 
+    reolink_connect.unsubscribe.side_effect = None
+    reolink_connect.logout.side_effect = None
+
 
 async def test_options_flow(hass: HomeAssistant, mock_setup_entry: MagicMock) -> None:
     """Test specifying non default settings using options flow."""
@@ -503,3 +506,5 @@ async def test_dhcp_ip_update(
 
     await hass.async_block_till_done()
     assert config_entry.data[CONF_HOST] == expected
+
+    reolink_connect.get_states.side_effect = None

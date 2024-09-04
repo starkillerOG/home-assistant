@@ -52,7 +52,7 @@ def mock_setup_entry() -> Generator[AsyncMock]:
         yield mock_setup_entry
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def reolink_connect_class() -> Generator[MagicMock]:
     """Mock reolink connection and return both the host_mock and host_mock_class."""
     with (
@@ -155,7 +155,7 @@ def config_entry(hass: HomeAssistant) -> MockConfigEntry:
     return config_entry
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def test_chime(reolink_connect: MagicMock) -> None:
     """Mock a reolink chime."""
     TEST_CHIME = Chime(

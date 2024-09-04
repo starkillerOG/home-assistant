@@ -129,3 +129,5 @@ async def test_update_firm(
     await hass.async_block_till_done()
 
     assert hass.states.get(entity_id).state == STATE_OFF
+    
+    reolink_connect.update_firmware.side_effect = None

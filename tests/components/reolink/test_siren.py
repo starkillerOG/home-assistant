@@ -61,7 +61,6 @@ async def test_siren(
     reolink_connect.set_siren.assert_called_with(0, True, 2)
 
     # test siren turn off
-    reolink_connect.set_siren.side_effect = None
     await hass.services.async_call(
         SIREN_DOMAIN,
         SERVICE_TURN_OFF,
@@ -132,3 +131,5 @@ async def test_siren_turn_off_errors(
             {ATTR_ENTITY_ID: entity_id},
             blocking=True,
         )
+
+    reolink_connect.set_siren.side_effect = None

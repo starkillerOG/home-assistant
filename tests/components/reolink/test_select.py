@@ -74,6 +74,7 @@ async def test_floodlight_mode_select(
 
     assert hass.states.get(entity_id).state == STATE_UNKNOWN
 
+    reolink_connect.set_whiteled.side_effect = None
 
 async def test_play_quick_reply_message(
     hass: HomeAssistant,
@@ -104,11 +105,13 @@ async def test_chime_select(
     hass: HomeAssistant,
     freezer: FrozenDateTimeFactory,
     config_entry: MockConfigEntry,
-    reolink_connect: MagicMock,
     test_chime: Chime,
+    reolink_connect: MagicMock,
     entity_registry: er.EntityRegistry,
 ) -> None:
     """Test chime select entity."""
+    reolink_connect.chime.return_value = test_chime
+    reolink_connect.chime_list = [test_chime]
     with patch("homeassistant.components.reolink.PLATFORMS", [Platform.SELECT]):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
@@ -153,3 +156,5 @@ async def test_chime_select(
     await hass.async_block_till_done()
 
     assert hass.states.get(entity_id).state == STATE_UNKNOWN
+
+    test_chime.set_tone.side_effect = None

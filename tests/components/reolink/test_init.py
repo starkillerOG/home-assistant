@@ -124,6 +124,7 @@ async def test_firmware_error_twice(
 
     assert hass.states.get(entity_id).state == STATE_UNAVAILABLE
 
+    reolink_connect.check_new_firmware.side_effect = None
 
 async def test_credential_error_three(
     hass: HomeAssistant,
@@ -149,6 +150,7 @@ async def test_credential_error_three(
 
     assert (HOMEASSISTANT_DOMAIN, issue_id) in issue_registry.issues
 
+    reolink_connect.get_states.side_effect = None
 
 async def test_entry_reloading(
     hass: HomeAssistant,
@@ -547,6 +549,8 @@ async def test_port_repair_issue(
     await hass.async_block_till_done()
 
     assert (DOMAIN, "enable_port") in issue_registry.issues
+    
+    reolink_connect.set_net_port.side_effect = None
 
 
 async def test_webhook_repair_issue(
