@@ -100,6 +100,7 @@ async def test_play_quick_reply_message(
     )
     reolink_connect.play_quick_reply.assert_called_once()
 
+    reolink_connect.quick_reply_dict = MagicMock()
 
 async def test_chime_select(
     hass: HomeAssistant,
@@ -110,8 +111,6 @@ async def test_chime_select(
     entity_registry: er.EntityRegistry,
 ) -> None:
     """Test chime select entity."""
-    reolink_connect.chime.return_value = test_chime
-    reolink_connect.chime_list = [test_chime]
     with patch("homeassistant.components.reolink.PLATFORMS", [Platform.SELECT]):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()

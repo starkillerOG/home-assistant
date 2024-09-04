@@ -100,6 +100,7 @@ async def test_siren_turn_on_errors(
 
     entity_id = f"{Platform.SIREN}.{TEST_NVR_NAME}_siren"
 
+    original = getattr(reolink_connect, attr)
     setattr(reolink_connect, attr, value)
     with pytest.raises(expected):
         await hass.services.async_call(
@@ -108,6 +109,8 @@ async def test_siren_turn_on_errors(
             {ATTR_ENTITY_ID: entity_id, ATTR_VOLUME_LEVEL: 0.85, ATTR_DURATION: 2},
             blocking=True,
         )
+    
+    setattr(reolink_connect, attr, original)
 
 
 async def test_siren_turn_off_errors(

@@ -39,6 +39,7 @@ from .conftest import (
     TEST_PORT,
     TEST_USE_HTTPS,
     TEST_USERNAME2,
+    TEST_HOST_MODEL,
 )
 
 from tests.common import MockConfigEntry
@@ -225,6 +226,7 @@ async def test_browsing(
     assert browse.identifier == browse_files_id
     assert browse.children[0].identifier == browse_file_id
 
+    reolink_connect.model = TEST_HOST_MODEL
 
 async def test_browsing_unsupported_encoding(
     hass: HomeAssistant,

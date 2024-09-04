@@ -480,6 +480,7 @@ async def test_dhcp_ip_update(
     )
 
     if attr is not None:
+        original = getattr(reolink_connect, attr)
         setattr(reolink_connect, attr, value)
 
     result = await hass.config_entries.flow.async_init(
@@ -508,3 +509,6 @@ async def test_dhcp_ip_update(
     assert config_entry.data[CONF_HOST] == expected
 
     reolink_connect.get_states.side_effect = None
+    reolink_connect_class.reset_mock()
+    if attr is not None:
+        setattr(reolink_connect, attr, original)

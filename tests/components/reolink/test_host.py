@@ -88,6 +88,7 @@ async def test_webhook_callback(
         content=bytes("test", "utf-8"),
         mock_source="test",
     )
+    request.read = AsyncMock()
     request.read.side_effect=ConnectionResetError("Test error")
     await async_handle_webhook(hass, webhook_id, request)
     signal_all.assert_not_called()
@@ -109,10 +110,13 @@ async def test_no_mac(
     reolink_connect: MagicMock,
 ) -> None:
     """Test setup of host with no mac."""
+    original = reolink_connect.mac_address
     reolink_connect.mac_address = None
     assert not await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state is ConfigEntryState.SETUP_RETRY
+    
+    reolink_connect.mac_address = original
 
 
 async def test_subscribe_error(
@@ -183,6 +187,7 @@ async def test_ONVIF_not_supported(
     assert config_entry.state is ConfigEntryState.LOADED
     
     reolink_connect.subscribe.side_effect = None
+    reolink_connect.subscribed.return_value = True
 
 
 async def test_renew(
@@ -298,6 +303,8 @@ async def test_long_poll_errors(
     reolink_connect: MagicMock,
 ) -> None:
     """Test errors during ONVIF long polling."""
+    reolink_connect.pull_point_request.reset_mock()
+    
     assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state is ConfigEntryState.LOADED
@@ -332,6 +339,7 @@ async def test_fast_polling_errors(
     reolink_connect: MagicMock,
 ) -> None:
     """Test errors during ONVIF fast polling."""
+    reolink_connect.get_motion_state_all_ch.reset_mock()
     reolink_connect.get_motion_state_all_ch.side_effect = ReolinkError("Test error")
     reolink_connect.pull_point_request.side_effect = ReolinkError("Test error")
 
