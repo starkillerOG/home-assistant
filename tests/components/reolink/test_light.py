@@ -96,6 +96,7 @@ async def test_light_turn_off(
 
     reolink_connect.set_whiteled.side_effect = None
 
+
 async def test_light_turn_on(
     hass: HomeAssistant,
     config_entry: MockConfigEntry,

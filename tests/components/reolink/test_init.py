@@ -100,7 +100,7 @@ async def test_failures_parametrized(
     await hass.async_block_till_done()
 
     assert config_entry.state == expected
-    
+
     setattr(reolink_connect, attr, original)
 
 
@@ -129,6 +129,7 @@ async def test_firmware_error_twice(
 
     reolink_connect.check_new_firmware.side_effect = None
 
+
 async def test_credential_error_three(
     hass: HomeAssistant,
     freezer: FrozenDateTimeFactory,
@@ -155,6 +156,7 @@ async def test_credential_error_three(
 
     reolink_connect.get_states.side_effect = None
 
+
 async def test_entry_reloading(
     hass: HomeAssistant,
     config_entry: MockConfigEntry,
@@ -174,7 +176,7 @@ async def test_entry_reloading(
 
     assert reolink_connect.logout.call_count == 1
     assert config_entry.title == "New Name"
-    
+
     reolink_connect.is_nvr = True
 
 

@@ -76,6 +76,7 @@ async def test_floodlight_mode_select(
 
     reolink_connect.set_whiteled.side_effect = None
 
+
 async def test_play_quick_reply_message(
     hass: HomeAssistant,
     config_entry: MockConfigEntry,
@@ -101,6 +102,7 @@ async def test_play_quick_reply_message(
     reolink_connect.play_quick_reply.assert_called_once()
 
     reolink_connect.quick_reply_dict = MagicMock()
+
 
 async def test_chime_select(
     hass: HomeAssistant,

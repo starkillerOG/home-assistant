@@ -109,7 +109,7 @@ async def test_siren_turn_on_errors(
             {ATTR_ENTITY_ID: entity_id, ATTR_VOLUME_LEVEL: 0.85, ATTR_DURATION: 2},
             blocking=True,
         )
-    
+
     setattr(reolink_connect, attr, original)
 
 
