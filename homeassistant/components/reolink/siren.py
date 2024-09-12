@@ -5,13 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from reolink_aio.api import Chime, ChimeToneEnum
 from reolink_aio.exceptions import InvalidParameterError, ReolinkError
-from reolink_aio.api import Chime
 
 from homeassistant.components.siren import (
     ATTR_DURATION,
-    ATTR_VOLUME_LEVEL,
     ATTR_TONE,
+    ATTR_VOLUME_LEVEL,
     SirenEntity,
     SirenEntityDescription,
     SirenEntityFeature,
@@ -23,7 +23,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import ReolinkData
 from .const import DOMAIN
-from .entity import ReolinkChannelCoordinatorEntity, ReolinkChannelEntityDescription, ReolinkChimeCoordinatorEntity
+from .entity import (
+    ReolinkChannelCoordinatorEntity,
+    ReolinkChannelEntityDescription,
+    ReolinkChimeCoordinatorEntity,
+)
 
 
 @dataclass(frozen=True)
@@ -131,18 +135,18 @@ class ReolinkChimeSirenEntity(ReolinkChimeCoordinatorEntity, SirenEntity):
         self,
         reolink_data: ReolinkData,
         chime: Chime,
-        entity_description: ReolinkChannelEntityDescription,
+        entity_description: ReolinkSirenEntityDescription,
     ) -> None:
         """Initialize Reolink siren entity for a chime."""
         self.entity_description = entity_description
         super().__init__(reolink_data, chime)
-        self._attr_available_tones = [method.name for method in ChimeToneEnum][1:]
+        self._attr_available_tones = [method.name for method in ChimeToneEnum][1:] # type: ignore
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the siren."""
         if (volume := kwargs.get(ATTR_VOLUME_LEVEL)) is not None:
             try:
-                await self._chime.set_option(volume = int(volume * 4))
+                await self._chime.set_option(volume=int(volume * 4))
             except InvalidParameterError as err:
                 raise ServiceValidationError(err) from err
             except ReolinkError as err:
@@ -150,7 +154,7 @@ class ReolinkChimeSirenEntity(ReolinkChimeCoordinatorEntity, SirenEntity):
             self.async_write_ha_state()
 
         ringtone = kwargs.get(ATTR_TONE)
-        for event in ["visitor", "people", "package", "md"]:
+        for event in ("visitor", "people", "package", "md"):
             if ringtone is None:
                 ringtone = self._chime.tone(event)
         if ringtone is None:
