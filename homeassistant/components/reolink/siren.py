@@ -136,6 +136,7 @@ class ReolinkChimeSirenEntity(ReolinkChimeCoordinatorEntity, SirenEntity):
         """Initialize Reolink siren entity for a chime."""
         self.entity_description = entity_description
         super().__init__(reolink_data, chime)
+        self._attr_available_tones = [method.name for method in ChimeToneEnum][1:]
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the siren."""

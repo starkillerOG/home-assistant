@@ -240,6 +240,9 @@
     "siren": {
       "siren": {
         "default": "mdi:alarm-light"
+      },
+      "play_ringtone": {
+        "default": "mdi:music"
       }
     },
     "switch": {

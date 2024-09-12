@@ -607,6 +607,9 @@
     "siren": {
       "siren": {
         "name": "[%key:component::siren::title%]"
+      },
+      "play_ringtone": {
+        "name": "Play ringtone"
       }
     },
     "switch": {
