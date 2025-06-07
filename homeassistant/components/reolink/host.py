@@ -34,7 +34,13 @@ from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.storage import Store
 from homeassistant.util.ssl import SSLCipherList
 
-from .const import CONF_BC_PORT, CONF_SUPPORTS_PRIVACY_MODE, CONF_USE_HTTPS, DOMAIN
+from .const import (
+    CONF_BC_ONLY,
+    CONF_BC_PORT,
+    CONF_SUPPORTS_PRIVACY_MODE,
+    CONF_USE_HTTPS,
+    DOMAIN,
+)
 from .exceptions import (
     PasswordIncompatible,
     ReolinkSetupException,
@@ -93,6 +99,7 @@ class ReolinkHost:
             timeout=DEFAULT_TIMEOUT,
             aiohttp_get_session_callback=get_aiohttp_session,
             bc_port=config.get(CONF_BC_PORT, DEFAULT_BC_PORT),
+            bc_only=config.get(CONF_BC_ONLY, False),
         )
 
         self.last_wake: float = 0

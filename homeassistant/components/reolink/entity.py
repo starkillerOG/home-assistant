@@ -186,7 +186,7 @@ class ReolinkChannelCoordinatorEntity(ReolinkHostCoordinatorEntity):
                 connections.add((CONNECTION_NETWORK_MAC, mac))
 
             conf_url = (
-                "{self._conf_url}/?ch={dev_ch}" if self._conf_url is not None else None
+                f"{self._conf_url}/?ch={dev_ch}" if self._conf_url is not None else None
             )
 
             self._attr_device_info = DeviceInfo(
