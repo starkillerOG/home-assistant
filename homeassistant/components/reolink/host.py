@@ -222,19 +222,27 @@ class ReolinkHost:
         enable_onvif = None
         enable_rtmp = None
 
-        if not self._api.rtsp_enabled:
+        if not self._api.rtsp_enabled and not self._api.baichuan_only:
             _LOGGER.debug(
                 "RTSP is disabled on %s, trying to enable it", self._api.nvr_name
             )
             enable_rtsp = True
 
-        if not self._api.onvif_enabled and onvif_supported:
+        if (
+            not self._api.onvif_enabled
+            and onvif_supported
+            and not self._api.baichuan_only
+        ):
             _LOGGER.debug(
                 "ONVIF is disabled on %s, trying to enable it", self._api.nvr_name
             )
             enable_onvif = True
 
-        if not self._api.rtmp_enabled and self._api.protocol == "rtmp":
+        if (
+            not self._api.rtmp_enabled
+            and self._api.protocol == "rtmp"
+            and not self._api.baichuan_only
+        ):
             _LOGGER.debug(
                 "RTMP is disabled on %s, trying to enable it", self._api.nvr_name
             )
