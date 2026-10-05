@@ -1,6 +1,7 @@
 """The go2rtc component."""
 
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, replace
 import logging
 from secrets import token_hex
 import shutil
@@ -274,12 +275,36 @@ async def _get_binary(hass: HomeAssistant) -> str | None:
     return await hass.async_add_executor_job(shutil.which, "go2rtc")
 
 
+@callback
+def _subscribe_messages(
+    ws_client: Go2RtcWsClient, send_message: WebRTCSendMessage
+) -> Callable[[], None]:
+    """Forward the go2rtc websocket messages to the client."""
+
+    @callback
+    def on_messages(message: ReceiveMessages) -> None:
+        """Handle messages."""
+        value: WebRTCMessage
+        match message:
+            case WebRTCCandidate():
+                value = HAWebRTCCandidate(RTCIceCandidateInit(message.candidate))
+            case WebRTCAnswer():
+                value = HAWebRTCAnswer(message.sdp)
+            case WsError():
+                value = WebRTCError("go2rtc_webrtc_offer_failed", message.error)
+
+        send_message(value)
+
+    return ws_client.subscribe(on_messages)
+
+
 @dataclass(frozen=True)
 class _SessionInfo:
     """Session info."""
 
     ws_client: Go2RtcWsClient
     camera: Camera
+    unsubscribe: Callable[[], None]
 
 
 class WebRTCProvider(CameraWebRTCProvider):
@@ -337,23 +362,9 @@ class WebRTCProvider(CameraWebRTCProvider):
         self._sessions[session_id] = _SessionInfo(
             ws_client=ws_client,
             camera=camera,
+            unsubscribe=_subscribe_messages(ws_client, send_message),
         )
 
-        @callback
-        def on_messages(message: ReceiveMessages) -> None:
-            """Handle messages."""
-            value: WebRTCMessage
-            match message:
-                case WebRTCCandidate():
-                    value = HAWebRTCCandidate(RTCIceCandidateInit(message.candidate))
-                case WebRTCAnswer():
-                    value = HAWebRTCAnswer(message.sdp)
-                case WsError():
-                    value = WebRTCError("go2rtc_webrtc_offer_failed", message.error)
-
-            send_message(value)
-
-        ws_client.subscribe(on_messages)
         config = camera.async_get_webrtc_client_configuration()
         await ws_client.send(WebRTCOffer(offer_sdp, config.configuration.ice_servers))
 
@@ -366,34 +377,30 @@ class WebRTCProvider(CameraWebRTCProvider):
         send_message: WebRTCSendMessage,
     ) -> None:
         """Handle the WebRTC offer on renegotiation and return the answer via the provided callback."""
-        if previous_session := self._sessions.pop(session_id, None):
-            await previous_session.ws_client.close()
+        session_info = self._sessions.get(session_id)
+        if session_info is None or not session_info.ws_client.connected:
+            # Without the original go2rtc websocket, go2rtc would answer with a
+            # new peer connection, which the client can't use for renegotiation
+            send_message(
+                WebRTCError(
+                    "go2rtc_webrtc_offer_failed", f"Unknown session {session_id}"
+                )
+            )
+            return
 
-        ws_client = Go2RtcWsClient(
-            self._session, self._url, source=get_camera_identifier(camera)
+        # Send the re-offer over the websocket of the session, so go2rtc
+        # renegotiates the existing peer connection and the stream continues.
+        # Only route the messages to the subscription of the re-offer.
+        session_info.unsubscribe()
+        self._sessions[session_id] = replace(
+            session_info,
+            unsubscribe=_subscribe_messages(session_info.ws_client, send_message),
         )
-        self._sessions[session_id] = _SessionInfo(
-            ws_client=ws_client,
-            camera=camera,
-        )
 
-        @callback
-        def on_messages(message: ReceiveMessages) -> None:
-            """Handle messages."""
-            value: WebRTCMessage
-            match message:
-                case WebRTCCandidate():
-                    value = HAWebRTCCandidate(RTCIceCandidateInit(message.candidate))
-                case WebRTCAnswer():
-                    value = HAWebRTCAnswer(message.sdp)
-                case WsError():
-                    value = WebRTCError("go2rtc_webrtc_offer_failed", message.error)
-
-            send_message(value)
-
-        ws_client.subscribe(on_messages)
         config = camera.async_get_webrtc_client_configuration()
-        await ws_client.send(WebRTCOffer(offer_sdp, config.configuration.ice_servers))
+        await session_info.ws_client.send(
+            WebRTCOffer(offer_sdp, config.configuration.ice_servers)
+        )
 
     @override
     async def async_on_webrtc_candidate(

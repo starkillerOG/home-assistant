@@ -497,31 +497,65 @@ async def test_close_session(
 
 
 @pytest.mark.usefixtures("init_integration")
-async def test_re_offer_closes_previous_session(
+async def test_re_offer_reuses_session(
     ws_clients: list[Mock],
     init_test_integration: MockCamera,
 ) -> None:
-    """Test a re-offer closes the go2rtc session it replaces."""
+    """Test a re-offer is sent over the websocket of the session it renegotiates."""
     camera = init_test_integration
     session_id = "session_id"
     ice_servers = (
         camera.async_get_webrtc_client_configuration().configuration.ice_servers
     )
 
-    await camera.async_handle_async_webrtc_offer(OFFER_SDP, session_id, Mock())
+    first_send_message = Mock(spec_set=WebRTCSendMessage)
+    await camera.async_handle_async_webrtc_offer(
+        OFFER_SDP, session_id, first_send_message
+    )
     assert len(ws_clients) == 1
-    ws_clients[0].send.assert_called_once_with(WebRTCOffer(OFFER_SDP, ice_servers))
+    ws_client = ws_clients[0]
+    ws_client.send.assert_called_once_with(WebRTCOffer(OFFER_SDP, ice_servers))
+    first_unsubscribe = ws_client.subscribe.return_value
 
-    await camera.async_handle_async_webrtc_re_offer(RE_OFFER_SDP, session_id, Mock())
-    assert len(ws_clients) == 2
-    ws_clients[0].close.assert_awaited_once()
-    ws_clients[1].send.assert_called_once_with(WebRTCOffer(RE_OFFER_SDP, ice_servers))
+    ws_client.reset_mock()
+    second_send_message = Mock(spec_set=WebRTCSendMessage)
+    await camera.async_handle_async_webrtc_re_offer(
+        RE_OFFER_SDP, session_id, second_send_message
+    )
 
-    # Closing the session only closes the client that replaced the first one
+    # The same go2rtc websocket is used, so go2rtc renegotiates the peer connection
+    assert len(ws_clients) == 1
+    ws_client.close.assert_not_called()
+    ws_client.send.assert_called_once_with(WebRTCOffer(RE_OFFER_SDP, ice_servers))
+
+    # Messages are routed to the subscription of the re-offer only
+    first_unsubscribe.assert_called_once()
+    ws_client.subscribe.assert_called_once()
+    on_message = ws_client.subscribe.call_args[0][0]
+    on_message(WebRTCAnswer(ANSWER_SDP))
+    second_send_message.assert_called_once_with(HAWebRTCAnswer(ANSWER_SDP))
+    first_send_message.assert_not_called()
+
     camera.close_webrtc_session(session_id)
     await asyncio.sleep(0)
-    ws_clients[0].close.assert_awaited_once()
-    ws_clients[1].close.assert_awaited_once()
+    ws_client.close.assert_awaited_once()
+
+
+@pytest.mark.usefixtures("init_integration")
+async def test_re_offer_unknown_session(
+    ws_clients: list[Mock],
+    init_test_integration: MockCamera,
+) -> None:
+    """Test a re-offer for an unknown session returns an error."""
+    send_message = Mock(spec_set=WebRTCSendMessage)
+    await init_test_integration.async_handle_async_webrtc_re_offer(
+        RE_OFFER_SDP, "unknown", send_message
+    )
+
+    assert ws_clients == []
+    send_message.assert_called_once_with(
+        WebRTCError("go2rtc_webrtc_offer_failed", "Unknown session unknown")
+    )
 
 
 async def _fail_with_offer(hass: HomeAssistant, camera: MockCamera, error: str) -> None:
