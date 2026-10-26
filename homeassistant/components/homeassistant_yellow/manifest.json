@@ -2,9 +2,13 @@
   "domain": "homeassistant_yellow",
   "name": "Home Assistant Yellow",
   "after_dependencies": ["hassio"],
+  "categories": [
+    "hubs_protocols.smart_home_hubs",
+    "hubs_protocols.wireless_protocols"
+  ],
   "codeowners": ["@home-assistant/core"],
   "config_flow": false,
-  "dependencies": ["hardware", "homeassistant_hardware"],
+  "dependencies": ["hardware", "homeassistant_hardware", "usb"],
   "documentation": "https://www.home-assistant.io/integrations/homeassistant_yellow",
   "integration_type": "hardware",
   "loggers": [

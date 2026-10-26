@@ -6,6 +6,11 @@ from unittest.mock import AsyncMock, patch
 from freezegun.api import FrozenDateTimeFactory
 from google_weather_api import GoogleWeatherApiAuthError, GoogleWeatherApiError
 import pytest
+from pytest_homeassistant.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+    snapshot_platform,
+)
 from syrupy.assertion import SnapshotAssertion
 
 from homeassistant.components.google_weather.const import DOMAIN
@@ -29,8 +34,6 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from homeassistant.util.unit_system import US_CUSTOMARY_SYSTEM
 
-from tests.common import MockConfigEntry, async_fire_time_changed, snapshot_platform
-
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
 async def test_sensor(
@@ -53,7 +56,7 @@ async def test_availability(
     mock_google_weather_api: AsyncMock,
     freezer: FrozenDateTimeFactory,
 ) -> None:
-    """Ensure that we mark the entities unavailable correctly when service is offline."""
+    """Ensure entities are marked unavailable when service is offline."""
     entity_id = "sensor.home_temperature"
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
 
@@ -163,7 +166,8 @@ async def test_state_update(
     assert state
     assert state.state == "13.7"
 
-    mock_google_weather_api.async_get_current_conditions.return_value.temperature.degrees = 15.0
+    current = mock_google_weather_api.async_get_current_conditions
+    current.return_value.temperature.degrees = 15.0
 
     freezer.tick(timedelta(minutes=15))
     async_fire_time_changed(hass)

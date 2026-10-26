@@ -1,10 +1,9 @@
 """Tests for the Ruckus integration."""
 
-from __future__ import annotations
-
 from unittest.mock import AsyncMock, patch
 
 from aioruckus import AjaxSession, RuckusAjaxApi
+from pytest_homeassistant.common import MockConfigEntry
 
 from homeassistant.components.ruckus_unleashed.const import (
     API_AP_DEVNAME,
@@ -29,8 +28,6 @@ from homeassistant.components.ruckus_unleashed.const import (
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
-
-from tests.common import MockConfigEntry
 
 DEFAULT_SYSTEM_INFO = {
     API_SYS_IDENTITY: {API_SYS_IDENTITY_NAME: "RuckusUnleashed"},

@@ -10,6 +10,8 @@ from bleak.backends.scanner import AdvertisementData
 from bleak.exc import BleakCharacteristicNotFoundError
 from eurotronic_cometblue_ha import CometBlueBleakClient
 import pytest
+from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.components.bluetooth import generate_ble_device
 
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.components.eurotronic_cometblue import PLATFORMS
@@ -28,9 +30,6 @@ from . import (
     WRITEABLE_CHARACTERISTICS,
     WRITEABLE_CHARACTERISTICS_ALLOW_UNCHANGED,
 )
-
-from tests.common import MockConfigEntry
-from tests.components.bluetooth import generate_ble_device
 
 # CometBlue device specific mocks and fixtures
 
@@ -130,8 +129,9 @@ class MockCometBlueBleakClient(CometBlueBleakClient):
         if char_specifier not in WRITEABLE_CHARACTERISTICS:
             raise BleakCharacteristicNotFoundError(char_specifier)
         data = bytearray(data)
-        # when writing temperature it is possible that 128 will be sent, meaning "no change"
-        # we have to restore the original value in this case to keep tests working
+        # when writing temperature it is possible that 128
+        # will be sent, meaning "no change"; we have to restore
+        # the original value in this case to keep tests working
         if char_specifier in WRITEABLE_CHARACTERISTICS_ALLOW_UNCHANGED:
             for i, byte in enumerate(data):
                 if byte == 128:
@@ -208,6 +208,7 @@ def mock_config_entry() -> MockConfigEntry:
             **FIXTURE_USER_INPUT,
         },
         unique_id=format_mac(FIXTURE_MAC),
+        title=f"Mock {FIXTURE_DEVICE_NAME} {FIXTURE_MAC}",
     )
 
 
@@ -216,7 +217,7 @@ def mock_setup_entry() -> Generator[AsyncMock]:
     """Patch async setup entry to return True."""
     with patch(
         "homeassistant.components.eurotronic_cometblue.async_setup_entry",
-        return_value=True,
+        return_value=None,
     ) as mock_setup:
         yield mock_setup
 

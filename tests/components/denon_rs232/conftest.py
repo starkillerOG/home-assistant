@@ -1,6 +1,4 @@
-"""Test fixtures for the Denon RS232 integration."""
-
-from __future__ import annotations
+"""Test fixtures for the Denon RS-232 integration."""
 
 from typing import Literal
 from unittest.mock import AsyncMock, patch
@@ -17,6 +15,7 @@ from denon_rs232 import (
 )
 from denon_rs232.models import MODELS
 import pytest
+from pytest_homeassistant.common import MockConfigEntry
 
 from homeassistant.components.denon_rs232.config_flow import CONF_MODEL_NAME
 from homeassistant.components.denon_rs232.const import DOMAIN
@@ -25,9 +24,7 @@ from homeassistant.core import HomeAssistant
 
 from . import MOCK_DEVICE, MOCK_MODEL
 
-from tests.common import MockConfigEntry
-
-ZoneName = Literal["main", "zone_2", "zone_3"]
+type ZoneName = Literal["main", "zone_2", "zone_3"]
 
 
 class MockState(ReceiverState):
@@ -101,6 +98,7 @@ def _default_state() -> MockState:
             digital_input=DigitalInputMode.AUTO,
             tuner_band=TunerBand.FM,
             tuner_mode=TunerMode.AUTO,
+            tuner_frequency="009930",
         ),
         zone_2=ZoneState(
             power=True,

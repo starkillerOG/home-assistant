@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, call
 
 import pytest
+from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
 from homeassistant.components.climate import HVACMode
@@ -10,8 +11,6 @@ from homeassistant.const import ATTR_ENTITY_ID, ATTR_TEMPERATURE
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
-
-from tests.common import MockConfigEntry, snapshot_platform
 
 CLIMATE_DEVICE = {
     "_id": "climate1",
@@ -217,7 +216,7 @@ async def test_set_temperature_sub_device_missing_parents(
     mock_config_entry: MockConfigEntry,
     mock_pyaxenco_client: AsyncMock,
 ) -> None:
-    """Missing parents/rfid for sub-device should fail temperature set without API call."""
+    """Missing parents/rfid should fail temp set without API call."""
     bad_sub = {**CLIMATE_SUB_DEVICE, "parents": {}, "rfid": None}
     mock_pyaxenco_client.get_devices.return_value = [bad_sub]
 
@@ -403,7 +402,7 @@ async def test_ntd_changeover_sets_cool(
     mock_config_entry: MockConfigEntry,
     mock_pyaxenco_client: AsyncMock,
 ) -> None:
-    """NTD devices with changeOverUser==1 should expose COOL and OFF modes and start in COOL."""
+    """NTD with changeOverUser==1 should expose COOL/OFF and start COOL."""
     mock_pyaxenco_client.get_devices.return_value = [CLIMATE_NTD_COOL]
     mock_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(mock_config_entry.entry_id)

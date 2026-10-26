@@ -1,14 +1,12 @@
 """Support for exposing Home Assistant via Zeroconf."""
 
-from __future__ import annotations
-
 from contextlib import suppress
 from ipaddress import IPv4Address, IPv6Address
 import logging
 import sys
 from typing import Any, cast
 
-import voluptuous as vol
+import probatio
 from zeroconf import InterfaceChoice, IPVersion
 from zeroconf.asyncio import AsyncServiceInfo
 
@@ -26,13 +24,8 @@ from homeassistant.loader import async_get_homekit, async_get_zeroconf
 from homeassistant.setup import async_when_setup_or_start
 
 from . import websocket_api
-from .const import DOMAIN, ZEROCONF_TYPE
-from .discovery import (  # noqa: F401
-    DATA_DISCOVERY,
-    ZeroconfDiscovery,
-    build_homekit_model_lookups,
-    info_from_service,
-)
+from .const import DATA_DISCOVERY, DATA_INSTANCE, DOMAIN, ZEROCONF_TYPE
+from .discovery import ZeroconfDiscovery, build_homekit_model_lookups, info_from_service
 from .models import HaAsyncZeroconf, HaZeroconf
 from .usage import install_multiple_zeroconf_catcher
 
@@ -51,21 +44,31 @@ MAX_PROPERTY_VALUE_LEN = 230
 # Dns label max length
 MAX_NAME_LEN = 63
 
-CONFIG_SCHEMA = vol.Schema(
+CONFIG_SCHEMA = probatio.Schema(
     {
-        DOMAIN: vol.All(
+        DOMAIN: probatio.All(
             cv.deprecated(CONF_DEFAULT_INTERFACE),
             cv.deprecated(CONF_IPV6),
-            vol.Schema(
+            probatio.Schema(
                 {
-                    vol.Optional(CONF_DEFAULT_INTERFACE): cv.boolean,
-                    vol.Optional(CONF_IPV6, default=DEFAULT_IPV6): cv.boolean,
+                    probatio.Optional(CONF_DEFAULT_INTERFACE): cv.boolean,
+                    probatio.Optional(CONF_IPV6, default=DEFAULT_IPV6): cv.boolean,
                 }
             ),
         )
     },
-    extra=vol.ALLOW_EXTRA,
+    extra=probatio.ALLOW_EXTRA,
 )
+
+__all__ = [
+    "DOMAIN",
+    "HaAsyncZeroconf",
+    "HaZeroconf",
+    "async_get_async_instance",
+    "async_get_async_zeroconf",
+    "async_get_instance",
+    "info_from_service",
+]
 
 
 async def async_get_instance(hass: HomeAssistant) -> HaZeroconf:
@@ -89,8 +92,8 @@ def async_get_async_zeroconf(hass: HomeAssistant) -> HaAsyncZeroconf:
 
 
 def _async_get_instance(hass: HomeAssistant) -> HaAsyncZeroconf:
-    if DOMAIN in hass.data:
-        return cast(HaAsyncZeroconf, hass.data[DOMAIN])
+    if DATA_INSTANCE in hass.data:
+        return hass.data[DATA_INSTANCE]
 
     zeroconf = HaZeroconf(**_async_get_zc_args(hass))
     aio_zc = HaAsyncZeroconf(zc=zeroconf)
@@ -104,7 +107,7 @@ def _async_get_instance(hass: HomeAssistant) -> HaAsyncZeroconf:
     # Wait to the close event to shutdown zeroconf to give
     # integrations time to send a good bye message
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_CLOSE, _async_stop_zeroconf)
-    hass.data[DOMAIN] = aio_zc
+    hass.data[DATA_INSTANCE] = aio_zc
 
     return aio_zc
 
@@ -261,8 +264,6 @@ async def _async_get_local_service_info(hass: HomeAssistant) -> AsyncServiceInfo
         "internal_url": "",
         # Old base URL, for backward compatibility
         "base_url": "",
-        # Always needs authentication
-        "requires_api_password": True,
     }
 
     # Get instance URL's

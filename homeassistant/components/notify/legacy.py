@@ -1,7 +1,5 @@
 """Handle legacy notification platforms."""
 
-from __future__ import annotations
-
 import asyncio
 from collections.abc import Coroutine, Mapping
 from functools import partial
@@ -287,6 +285,8 @@ class BaseNotificationService:
                 ):
                     continue
                 self.registered_targets[target_name] = target
+                # Cannot be moved: actions are registered per legacy platform
+                # pylint: disable-next=home-assistant-action-registered-outside-services-module
                 self.hass.services.async_register(
                     DOMAIN,
                     target_name,
@@ -297,8 +297,10 @@ class BaseNotificationService:
                 service_desc = {
                     CONF_NAME: f"Send a notification via {target_name}",
                     CONF_DESCRIPTION: (
-                        "Sends a notification message using the"
-                        f" {target_name} integration."
+                        "This notification action is provided by a notification "
+                        "integration or notification group. To change where "
+                        "notifications are sent or which options are available, "
+                        "update that integration or group."
                     ),
                     CONF_FIELDS: self.services_dict[SERVICE_NOTIFY][CONF_FIELDS],
                 }
@@ -314,6 +316,7 @@ class BaseNotificationService:
         if self.hass.services.has_service(DOMAIN, self._service_name):
             return
 
+        # pylint: disable-next=home-assistant-action-registered-outside-services-module
         self.hass.services.async_register(
             DOMAIN,
             self._service_name,
@@ -325,7 +328,9 @@ class BaseNotificationService:
         service_desc = {
             CONF_NAME: f"Send a notification with {self._service_name}",
             CONF_DESCRIPTION: (
-                f"Sends a notification message using the {self._service_name} service."
+                "This notification action is provided by a notification integration "
+                "or notification group. To change where notifications are sent or "
+                "which options are available, update that integration or group."
             ),
             CONF_FIELDS: self.services_dict[SERVICE_NOTIFY][CONF_FIELDS],
         }

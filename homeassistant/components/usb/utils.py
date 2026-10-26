@@ -1,18 +1,18 @@
 """The USB Discovery integration."""
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 import fnmatch
 import os
+from urllib.parse import parse_qs, urlsplit
 
-from serialx import SerialPortInfo, list_serial_ports
+from serialx import SerialPortInfo, is_non_unique_serial, list_serial_ports
 
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.service_info.usb import UsbServiceInfo
 from homeassistant.loader import USBMatcher
 
 from .models import SerialDevice, USBDevice
+
+SERIAL_BY_ID_DIR = "/dev/serial/by-id/"
 
 
 def usb_device_from_port(port: SerialPortInfo) -> USBDevice:
@@ -22,11 +22,15 @@ def usb_device_from_port(port: SerialPortInfo) -> USBDevice:
 
     return USBDevice(
         device=port.device,
+        resolved_device=port.resolved_device,
         vid=f"{hex(port.vid)[2:]:0>4}".upper(),
         pid=f"{hex(port.pid)[2:]:0>4}".upper(),
         serial_number=port.serial_number,
         manufacturer=port.manufacturer,
-        description=port.product,
+        description=port.description,
+        bcd_device=port.bcd_device,
+        interface_description=port.interface_description,
+        interface_num=port.interface_num,
     )
 
 
@@ -34,9 +38,12 @@ def serial_device_from_port(port: SerialPortInfo) -> SerialDevice:
     """Convert serialx SerialPortInfo to SerialDevice."""
     return SerialDevice(
         device=port.device,
+        resolved_device=port.resolved_device,
         serial_number=port.serial_number,
         manufacturer=port.manufacturer,
-        description=port.product,
+        description=port.description,
+        interface_description=port.interface_description,
+        interface_num=port.interface_num,
     )
 
 
@@ -52,11 +59,24 @@ def scan_serial_ports() -> Sequence[USBDevice | SerialDevice]:
     return [usb_serial_device_from_port(port) for port in list_serial_ports()]
 
 
-async def async_scan_serial_ports(
-    hass: HomeAssistant,
-) -> Sequence[USBDevice | SerialDevice]:
-    """Scan serial ports and return USB and other serial devices, async."""
-    return await hass.async_add_executor_job(scan_serial_ports)
+def has_unique_serial_number(port: SerialDevice) -> bool:
+    """Return whether a port's serial number tells it apart from identical devices."""
+    return not is_non_unique_serial(port.serial_number)
+
+
+def serial_path_udev_id(path: str) -> str | None:
+    """Return the udev by-id link name of the device behind a serial port path."""
+
+    # A by-id link names the device directly, a serial proxy URL carries the same name
+    # as `port_udev_id`, so a device is recognized when it moves between the two
+    if path.startswith(SERIAL_BY_ID_DIR):
+        return path.removeprefix(SERIAL_BY_ID_DIR)
+
+    query = parse_qs(urlsplit(path).query)
+    if "port_udev_id" in query:
+        return query["port_udev_id"][0]
+
+    return None
 
 
 def usb_device_from_path(device_path: str) -> USBDevice | None:

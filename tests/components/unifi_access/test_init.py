@@ -1,12 +1,11 @@
 """Tests for the UniFi Access integration setup."""
 
-from __future__ import annotations
-
 from collections.abc import Awaitable, Callable
 import ssl
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pytest_homeassistant.common import MockConfigEntry
 from unifi_access_api import (
     ApiAuthError,
     ApiConnectionError,
@@ -31,8 +30,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from .conftest import _make_door
-
-from tests.common import MockConfigEntry
 
 FRONT_DOOR_BINARY_SENSOR = "binary_sensor.front_door"
 BACK_DOOR_BINARY_SENSOR = "binary_sensor.back_door"
@@ -76,7 +73,7 @@ async def test_setup_entry_ssl_context(
     verify_ssl: bool,
     expected_ssl_context_type: type,
 ) -> None:
-    """Test that a pre-warmed no-verify SSL context is passed when verify_ssl is False."""
+    """Test no-verify SSL context is passed when verify_ssl is False."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="UniFi Access",
@@ -333,7 +330,8 @@ async def test_ws_location_update_with_thumbnail(
     mock_client: MagicMock,
 ) -> None:
     """Test location_update_v2 with thumbnail updates image entity."""
-    assert hass.states.get(BACK_DOOR_IMAGE).state == "unknown"
+    # Back door starts without thumbnail — entity does not exist yet
+    assert hass.states.get(BACK_DOOR_IMAGE) is None
 
     handlers = _get_ws_handlers(mock_client)
     msg = LocationUpdateV2(
@@ -416,7 +414,12 @@ async def test_new_door_entities_created_on_refresh(
     # Add a new door to the API response
     mock_client.get_doors.return_value = [
         *mock_client.get_doors.return_value,
-        _make_door("door-003", "Garage Door"),
+        _make_door(
+            "door-003",
+            "Garage Door",
+            door_thumbnail="/preview/garage_door.png",
+            door_thumbnail_last_update=1700000000,
+        ),
     ]
 
     # Trigger natural refresh via WebSocket reconnect
@@ -443,8 +446,12 @@ async def test_stale_device_removed_on_refresh(
 ) -> None:
     """Test that stale devices are automatically removed on data refresh."""
     # Verify both doors exist after initial setup
-    assert device_registry.async_get_device(identifiers={(DOMAIN, "door-001")})
-    assert device_registry.async_get_device(identifiers={(DOMAIN, "door-002")})
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, "door-001"), init_integration.entry_id
+    )
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, "door-002"), init_integration.entry_id
+    )
 
     # Simulate door-002 being removed from the hub
     mock_client.get_doors.return_value = [
@@ -460,8 +467,12 @@ async def test_stale_device_removed_on_refresh(
     await hass.async_block_till_done()
 
     # door-001 still exists, door-002 was removed
-    assert device_registry.async_get_device(identifiers={(DOMAIN, "door-001")})
-    assert not device_registry.async_get_device(identifiers={(DOMAIN, "door-002")})
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, "door-001"), init_integration.entry_id
+    )
+    assert not device_registry.async_get_device_by_identifier(
+        (DOMAIN, "door-002"), init_integration.entry_id
+    )
 
 
 async def test_stale_device_removed_on_startup(
@@ -478,12 +489,20 @@ async def test_stale_device_removed_on_startup(
         config_entry_id=mock_config_entry.entry_id,
         identifiers={(DOMAIN, "door-003")},
     )
-    assert device_registry.async_get_device(identifiers={(DOMAIN, "door-003")})
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, "door-003"), mock_config_entry.entry_id
+    )
 
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
     # Valid doors from the hub should exist, stale device should be removed
-    assert device_registry.async_get_device(identifiers={(DOMAIN, "door-001")})
-    assert device_registry.async_get_device(identifiers={(DOMAIN, "door-002")})
-    assert not device_registry.async_get_device(identifiers={(DOMAIN, "door-003")})
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, "door-001"), mock_config_entry.entry_id
+    )
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, "door-002"), mock_config_entry.entry_id
+    )
+    assert not device_registry.async_get_device_by_identifier(
+        (DOMAIN, "door-003"), mock_config_entry.entry_id
+    )

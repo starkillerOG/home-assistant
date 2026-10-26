@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 from aiorussound.rio.models import PartyMode
 import pytest
+from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
 from homeassistant.components.select import (
@@ -15,8 +16,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from . import setup_integration
-
-from tests.common import MockConfigEntry, snapshot_platform
 
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
@@ -46,7 +45,7 @@ async def test_setting_value(
         SELECT_DOMAIN,
         SERVICE_SELECT_OPTION,
         {
-            ATTR_ENTITY_ID: "select.backyard_party_mode",
+            ATTR_ENTITY_ID: "select.backyard_backyard_party_mode",
             ATTR_OPTION: "master",
         },
         blocking=True,
@@ -59,7 +58,7 @@ async def test_setting_value(
         SELECT_DOMAIN,
         SERVICE_SELECT_OPTION,
         {
-            ATTR_ENTITY_ID: "select.backyard_party_mode",
+            ATTR_ENTITY_ID: "select.backyard_backyard_party_mode",
             ATTR_OPTION: "off",
         },
         blocking=True,
