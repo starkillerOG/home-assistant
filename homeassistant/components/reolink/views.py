@@ -13,14 +13,14 @@ from .util import get_host
 
 
 @callback
-def async_generate_hls_url(config_entry_id: str, token: str) -> str:
+def async_generate_playback_proxy_url(config_entry_id: str, token: str) -> str:
     """Generate the URL of the HLS playlist of a recording being downloaded."""
-    return HlsPlaybackView.url.format(
+    return PlaybackProxyView.url.format(
         config_entry_id=config_entry_id, token=token, filename=HLS_PLAYLIST
     )
 
 
-class HlsPlaybackView(HomeAssistantView):
+class PlaybackProxyView(HomeAssistantView):
     """View to serve the HLS files of a Reolink recording being downloaded."""
 
     # The HLS player does not authenticate the requests for the files in the

@@ -20,7 +20,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from .const import DOMAIN
 from .util import get_host
-from .views import async_generate_hls_url
+from .views import async_generate_playback_proxy_url
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,14 +75,18 @@ class ReolinkVODMediaSource(MediaSource):
 
         host = get_host(self.hass, config_entry_id)
 
-        playback = await host.async_start_hls_playback(
-            channel,
+        start = dt.datetime.strptime(start_time, "%Y%m%d%H%M%S")
+        end = dt.datetime.strptime(end_time, "%Y%m%d%H%M%S")
+        _LOGGER.debug(
+            "Opening recording playback of %s: %s stream from %s to %s",
+            host.api.camera_name(channel),
             stream_res,
-            dt.datetime.strptime(start_time, "%Y%m%d%H%M%S"),
-            dt.datetime.strptime(end_time, "%Y%m%d%H%M%S"),
+            start,
+            end,
         )
-        hls_url = async_generate_hls_url(config_entry_id, playback.token)
-        return PlayMedia(hls_url, "application/x-mpegURL")
+        playback = await host.async_start_hls_playback(channel, stream_res, start, end)
+        proxy_url = async_generate_playback_proxy_url(config_entry_id, playback.token)
+        return PlayMedia(proxy_url, "application/x-mpegURL")
 
     @override
     async def async_browse_media(

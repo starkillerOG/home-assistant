@@ -15,7 +15,7 @@ from reolink_aio.baichuan.media_decoder import HLS_INIT, HLS_PLAYLIST
 from reolink_aio.exceptions import UnexpectedDataError
 
 from homeassistant.components.reolink.hls import IDLE_TIMEOUT, ReolinkHlsPlayback
-from homeassistant.components.reolink.views import async_generate_hls_url
+from homeassistant.components.reolink.views import async_generate_playback_proxy_url
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
@@ -45,7 +45,9 @@ async def start_hls_playback(
     playback = await config_entry.runtime_data.host.async_start_hls_playback(
         int(TEST_CHANNEL), TEST_STREAM, TEST_HLS_START, TEST_HLS_END
     )
-    return playback, async_generate_hls_url(config_entry.entry_id, playback.token)
+    return playback, async_generate_playback_proxy_url(
+        config_entry.entry_id, playback.token
+    )
 
 
 async def test_hls_playback(
@@ -179,8 +181,8 @@ async def test_hls_playback_invalid_url(
 
     http_client = await hass_client_no_auth()
     for url in (
-        async_generate_hls_url(config_entry.entry_id, "wrong_token"),
-        async_generate_hls_url("wrong_config_entry_id", playback.token),
+        async_generate_playback_proxy_url(config_entry.entry_id, "wrong_token"),
+        async_generate_playback_proxy_url("wrong_config_entry_id", playback.token),
     ):
         response = cast(ClientResponse, await http_client.get(url))
         assert response.status == HTTPStatus.NOT_FOUND
@@ -226,7 +228,7 @@ async def test_hls_playback_stop_previous(
     response = cast(ClientResponse, await http_client.get(first_url))
     assert response.status == HTTPStatus.NOT_FOUND
 
-    second_url = async_generate_hls_url(config_entry.entry_id, second.token)
+    second_url = async_generate_playback_proxy_url(config_entry.entry_id, second.token)
     response = cast(ClientResponse, await http_client.get(second_url))
     assert await response.read() == b"second"
 
