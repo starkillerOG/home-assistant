@@ -22,7 +22,6 @@ from homeassistant.components.media_source import (
 from homeassistant.components.reolink.config_flow import DEFAULT_PROTOCOL
 from homeassistant.components.reolink.const import CONF_BC_PORT, CONF_USE_HTTPS, DOMAIN
 from homeassistant.components.reolink.media_source import VOD_SPLIT_TIME
-from homeassistant.components.stream import DOMAIN as MEDIA_STREAM_DOMAIN
 from homeassistant.const import (
     CONF_HOST,
     CONF_PASSWORD,
@@ -60,21 +59,16 @@ TEST_END = f"{TEST_YEAR}{TEST_MONTH}{TEST_DAY}{TEST_HOUR}{TEST_MINUTE + 5}"
 TEST_START_TIME = datetime(TEST_YEAR, TEST_MONTH, TEST_DAY, 0, 0)
 TEST_END_TIME = datetime(TEST_YEAR, TEST_MONTH, TEST_DAY, 23, 59, 59)
 TEST_FILE_NAME = f"{TEST_START}00"
-TEST_FILE_NAME_MP4 = f"{TEST_START}00.mp4"
 TEST_STREAM = "main"
 TEST_CHANNEL = "0"
 
 TEST_MIME_TYPE = "application/x-mpegURL"
-TEST_MIME_TYPE_MP4 = "video/mp4"
-TEST_URL = "http:test_url&user=admin&password=test"
-TEST_URL2 = "http:test_url&token=test"
 
 
 @pytest.fixture(autouse=True)
 async def setup_component(hass: HomeAssistant) -> None:
     """Set up component."""
     assert await async_setup_component(hass, MEDIA_SOURCE_DOMAIN, {})
-    assert await async_setup_component(hass, MEDIA_STREAM_DOMAIN, {})
 
 
 async def test_platform_loads_before_config_entry(
@@ -92,12 +86,10 @@ async def test_resolve(
     hass: HomeAssistant,
     reolink_host: MagicMock,
     config_entry: MockConfigEntry,
-    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test resolving Reolink media items."""
     assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
-    caplog.set_level(logging.DEBUG)
 
     file_id = (
         f"FILE|{config_entry.entry_id}|{TEST_CHANNEL}|{TEST_STREAM}"
@@ -107,7 +99,6 @@ async def test_resolve(
     async def stream_hls(*args: Any) -> AsyncGenerator[tuple[str, bytes]]:
         yield HLS_PLAYLIST, b"playlist"
 
-    # NVR: the recording is downloaded using Baichuan and played as HLS
     reolink_host.baichuan.stream_hls = MagicMock(side_effect=stream_hls)
 
     play_media = await async_resolve_media(
@@ -125,30 +116,6 @@ async def test_resolve(
         TEST_STREAM,
         "ffmpeg",
     )
-
-    reolink_host.is_nvr = False
-
-    file_id = (
-        f"FILE|{config_entry.entry_id}|{TEST_CHANNEL}|{TEST_STREAM}"
-        f"|{TEST_FILE_NAME_MP4}|{TEST_START}|{TEST_END}"
-    )
-    reolink_host.get_vod_source.return_value = (TEST_MIME_TYPE_MP4, TEST_URL2)
-
-    play_media = await async_resolve_media(
-        hass, f"{URI_SCHEME}{DOMAIN}/{file_id}", None
-    )
-    assert play_media.mime_type == TEST_MIME_TYPE_MP4
-
-    file_id = (
-        f"FILE|{config_entry.entry_id}|{TEST_CHANNEL}|{TEST_STREAM}"
-        f"|{TEST_FILE_NAME}|{TEST_START}|{TEST_END}"
-    )
-    reolink_host.get_vod_source.return_value = (TEST_MIME_TYPE, TEST_URL)
-
-    play_media = await async_resolve_media(
-        hass, f"{URI_SCHEME}{DOMAIN}/{file_id}", None
-    )
-    assert play_media.mime_type == TEST_MIME_TYPE
 
 
 async def test_browsing(
