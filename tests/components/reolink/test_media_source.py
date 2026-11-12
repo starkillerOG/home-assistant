@@ -1,11 +1,14 @@
 """Tests for the Reolink media_source platform."""
 
+from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta
 import logging
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
+from reolink_aio.baichuan.media_decoder import HLS_PLAYLIST
 from reolink_aio.exceptions import ReolinkError
 from reolink_aio.typings import VOD_trigger
 
@@ -100,25 +103,36 @@ async def test_resolve(
         f"FILE|{config_entry.entry_id}|{TEST_CHANNEL}|{TEST_STREAM}"
         f"|{TEST_FILE_NAME}|{TEST_START}|{TEST_END}"
     )
-    reolink_host.get_vod_source.return_value = (TEST_MIME_TYPE_MP4, TEST_URL)
+
+    async def stream_hls(*args: Any) -> AsyncGenerator[tuple[str, bytes]]:
+        yield HLS_PLAYLIST, b"playlist"
+
+    # NVR: the recording is downloaded using Baichuan and played as HLS
+    reolink_host.baichuan.stream_hls = MagicMock(side_effect=stream_hls)
 
     play_media = await async_resolve_media(
         hass, f"{URI_SCHEME}{DOMAIN}/{file_id}", None
     )
-    assert play_media.mime_type == TEST_MIME_TYPE_MP4
+    assert play_media.mime_type == TEST_MIME_TYPE
+    playback = config_entry.runtime_data.host.hls_playback
+    assert play_media.url == (
+        f"/api/reolink/hls/{config_entry.entry_id}/{playback.token}/{HLS_PLAYLIST}"
+    )
+    reolink_host.baichuan.stream_hls.assert_called_once_with(
+        int(TEST_CHANNEL),
+        datetime.strptime(TEST_START, "%Y%m%d%H%M%S"),
+        datetime.strptime(TEST_END, "%Y%m%d%H%M%S"),
+        TEST_STREAM,
+        "ffmpeg",
+    )
+
+    reolink_host.is_nvr = False
 
     file_id = (
         f"FILE|{config_entry.entry_id}|{TEST_CHANNEL}|{TEST_STREAM}"
         f"|{TEST_FILE_NAME_MP4}|{TEST_START}|{TEST_END}"
     )
     reolink_host.get_vod_source.return_value = (TEST_MIME_TYPE_MP4, TEST_URL2)
-
-    play_media = await async_resolve_media(
-        hass, f"{URI_SCHEME}{DOMAIN}/{file_id}", None
-    )
-    assert play_media.mime_type == TEST_MIME_TYPE_MP4
-
-    reolink_host.is_nvr = False
 
     play_media = await async_resolve_media(
         hass, f"{URI_SCHEME}{DOMAIN}/{file_id}", None
