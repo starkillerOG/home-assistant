@@ -22,7 +22,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from .const import DOMAIN
 from .util import get_host
-from .views import async_generate_playback_proxy_url
+from .views import async_generate_hls_url, async_generate_playback_proxy_url
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -87,13 +87,16 @@ class ReolinkVODMediaSource(MediaSource):
         vod_type = get_vod_type()
 
         if vod_type is VodRequestType.NVR_DOWNLOAD:
-            filename = f"{start_time}_{end_time}"
+            playback = await host.async_start_hls_playback(
+                channel,
+                stream_res,
+                dt.datetime.strptime(start_time, "%Y%m%d%H%M%S"),
+                dt.datetime.strptime(end_time, "%Y%m%d%H%M%S"),
+            )
+            hls_url = async_generate_hls_url(config_entry_id, playback.token)
+            return PlayMedia(hls_url, "application/x-mpegURL")
 
-        if vod_type in {
-            VodRequestType.DOWNLOAD,
-            VodRequestType.NVR_DOWNLOAD,
-            VodRequestType.PLAYBACK,
-        }:
+        if vod_type in {VodRequestType.DOWNLOAD, VodRequestType.PLAYBACK}:
             proxy_url = async_generate_playback_proxy_url(
                 config_entry_id, channel, filename, stream_res, vod_type.value
             )
