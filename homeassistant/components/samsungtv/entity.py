@@ -52,6 +52,7 @@ class SamsungTVEntity(CoordinatorEntity[SamsungTVDataUpdateCoordinator], Entity)
             self.coordinator.is_on
             or bool(self._turn_on_action)
             or self._mac is not None
+            or self.coordinator.ip_control is not None
             or self._bridge.power_off_in_progress
         )
 
@@ -77,6 +78,10 @@ class SamsungTVEntity(CoordinatorEntity[SamsungTVDataUpdateCoordinator], Entity)
         if self._turn_on_action:
             LOGGER.debug("Attempting to turn on %s via automation", self.entity_id)
             await self._turn_on_action.async_run(self.hass, self._context)
+            return
+        if ip_control := self.coordinator.ip_control:
+            LOGGER.debug("Attempting to turn on %s via IP control", self.entity_id)
+            await ip_control.async_power_on()
             return
         raise HomeAssistantError(
             translation_domain=DOMAIN,

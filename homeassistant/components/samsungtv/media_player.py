@@ -23,6 +23,7 @@ from .const import CONF_SSDP_RENDERING_CONTROL_LOCATION, DOMAIN, LOGGER
 from .coordinator import SamsungTVConfigEntry, SamsungTVDataUpdateCoordinator
 from .dmr import SamsungTVDmrDevice
 from .entity import SamsungTVEntity
+from .ip_control import IP_CONTROL_SOURCES
 
 SOURCES = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
 
@@ -71,12 +72,12 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
         self._ssdp_rendering_control_location: str | None = (
             coordinator.config_entry.data.get(CONF_SSDP_RENDERING_CONTROL_LOCATION)
         )
+        self._app_list: dict[str, str] | None = None
         # Assume that the TV is in Play mode
         self._playing: bool = True
 
         self._attr_is_volume_muted: bool = False
-        self._attr_source_list = list(SOURCES)
-        self._app_list: dict[str, str] | None = None
+        self._update_sources()
         self._app_list_event: asyncio.Event = asyncio.Event()
 
         self._attr_supported_features = SUPPORT_SAMSUNGTV
@@ -98,12 +99,14 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
         """Flag media player features that are supported."""
         # `turn_on` triggers are not yet registered during initialisation,
         # so this property needs to be dynamic
-        if self._turn_on_action:
+        if self._turn_on_action or self.coordinator.ip_control:
             return self._attr_supported_features | MediaPlayerEntityFeature.TURN_ON
         return self._attr_supported_features
 
     def _update_sources(self) -> None:
         self._attr_source_list = list(SOURCES)
+        if self.coordinator.ip_control:
+            self._attr_source_list.extend(IP_CONTROL_SOURCES)
         if app_list := self._app_list:
             self._attr_source_list.extend(app_list)
 
@@ -129,6 +132,7 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
             self._update_from_upnp()
         else:
             self._attr_state = MediaPlayerState.OFF
+        self._update_from_ip_control()
 
     @override
     async def async_will_remove_from_hass(self) -> None:
@@ -146,7 +150,16 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
             self._update_from_upnp()
         else:
             self._attr_state = MediaPlayerState.OFF
+        self._update_from_ip_control()
         self.async_write_ha_state()
+
+    @callback
+    def _update_from_ip_control(self) -> None:
+        """Update the source, which is only known when using IP control."""
+        if (ip_control := self.coordinator.ip_control) is None:
+            return
+        # The TV keeps reporting the HDMI input while an app is shown
+        self._attr_source = ip_control.source if self.coordinator.is_on else None
 
     async def _async_extra_update(self) -> None:
         """Update state of device."""
@@ -320,6 +333,14 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
 
         if source in SOURCES:
             await self._async_send_keys([SOURCES[source]])
+            return
+
+        if (ip_control := self.coordinator.ip_control) and (
+            source in IP_CONTROL_SOURCES
+        ):
+            await ip_control.async_select_source(source)
+            self._attr_source = source
+            self.async_write_ha_state()
             return
 
         raise HomeAssistantError(

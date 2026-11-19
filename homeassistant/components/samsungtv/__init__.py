@@ -22,6 +22,7 @@ from homeassistant.helpers.debounce import Debouncer
 
 from .bridge import SamsungTVBridge, mac_from_device_info, model_requires_encryption
 from .const import (
+    CONF_IP_CONTROL_TOKEN,
     CONF_SESSION_ID,
     CONF_SSDP_MAIN_TV_AGENT_LOCATION,
     CONF_SSDP_RENDERING_CONTROL_LOCATION,
@@ -33,6 +34,7 @@ from .const import (
     UPNP_SVC_RENDERING_CONTROL,
 )
 from .coordinator import SamsungTVConfigEntry, SamsungTVDataUpdateCoordinator
+from .ip_control import SamsungTVIPControl
 
 PLATFORMS = [Platform.MEDIA_PLAYER, Platform.REMOTE]
 
@@ -155,6 +157,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SamsungTVConfigEntry) ->
     entry.async_on_unload(entry.add_update_listener(debounced_reloader.async_call))
 
     coordinator = SamsungTVDataUpdateCoordinator(hass, entry, bridge)
+    if entry.data.get(CONF_IP_CONTROL_TOKEN):
+        coordinator.ip_control = SamsungTVIPControl(hass, entry)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

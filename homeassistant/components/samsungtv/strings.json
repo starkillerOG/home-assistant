@@ -10,7 +10,8 @@
     "error": {
       "auth_missing": "[%key:component::samsungtv::config::abort::auth_missing%]",
       "invalid_host": "[%key:common::config_flow::error::invalid_host%]",
-      "invalid_pin": "The PIN is invalid. Please try again."
+      "invalid_pin": "The PIN is invalid. Please try again.",
+      "ip_control_pairing_failed": "Pairing failed. Make sure the TV is turned on, showing an HDMI input and accept the popup on the TV within 30 seconds."
     },
     "flow_title": "{device}",
     "step": {
@@ -26,6 +27,18 @@
         },
         "description": "Please enter the PIN displayed on {device}."
       },
+      "ip_control": {
+        "description": "The IP remote setting is enabled on {device}. By pairing with it, Home Assistant can turn on the TV, select the HDMI inputs and show the selected HDMI input. The TV only allows a single device to be paired, pairing will disconnect any other device using IP remote.",
+        "menu_options": {
+          "ip_control_pairing": "Pair with IP remote",
+          "ip_control_skip": "Skip"
+        },
+        "title": "IP remote"
+      },
+      "ip_control_pairing": {
+        "description": "Make sure {device} is turned on and showing an HDMI input. After submitting, accept the popup on the TV requesting authorization within 30 seconds.",
+        "title": "[%key:component::samsungtv::config::step::ip_control::title%]"
+      },
       "pairing": {
         "description": "[%key:component::samsungtv::config::step::confirm::description%]"
       },
@@ -40,6 +53,10 @@
           "pin": "[%key:component::samsungtv::config::step::encrypted_pairing::data_description::pin%]"
         },
         "description": "[%key:component::samsungtv::config::step::encrypted_pairing::description%]"
+      },
+      "reauth_ip_control": {
+        "description": "The IP remote pairing of {device} is no longer valid, which happens when another device has been paired. Make sure the TV is turned on and showing an HDMI input. After submitting, accept the popup on the TV requesting authorization within 30 seconds.",
+        "title": "[%key:component::samsungtv::config::step::ip_control::title%]"
       },
       "reconfigure": {
         "data": {

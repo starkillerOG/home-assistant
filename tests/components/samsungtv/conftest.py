@@ -10,11 +10,12 @@ from async_upnp_client.event_handler import UpnpEventHandler
 from async_upnp_client.exceptions import UpnpConnectionError
 import pytest
 from pytest_homeassistant.common import async_load_json_object_fixture
+from samsungtvws.async_ip_control import SamsungTVAsyncIPControl
 from samsungtvws.async_remote import SamsungTVWSAsyncRemote
 from samsungtvws.command import SamsungTVCommand
 from samsungtvws.encrypted.remote import SamsungTVEncryptedWSAsyncRemote
 from samsungtvws.event import ED_INSTALLED_APP_EVENT
-from samsungtvws.exceptions import ResponseError
+from samsungtvws.exceptions import IPControlConnectionError, ResponseError
 from samsungtvws.remote import ChannelEmitCommand
 
 from homeassistant.components.samsungtv.const import DOMAIN, WEBSOCKET_SSL_PORT
@@ -166,6 +167,32 @@ def rest_api_fixture() -> Generator[Mock]:
             SAMPLE_DEVICE_INFO_WIFI
         )
         yield rest_api_class.return_value
+
+
+@pytest.fixture(name="ip_control", autouse=True)
+def ip_control_fixture() -> Generator[Mock]:
+    """Patch the samsungtvws SamsungTVAsyncIPControl.
+
+    The IP remote setting is disabled on the TV by default.
+    """
+    with patch(
+        "homeassistant.components.samsungtv.ip_control.SamsungTVAsyncIPControl",
+        autospec=True,
+    ) as ip_control_class:
+        ip_control: Mock = ip_control_class.return_value
+        ip_control.mock_add_spec(SamsungTVAsyncIPControl)
+        ip_control.send_request.side_effect = IPControlConnectionError
+        ip_control.create_access_token.return_value = "IP_CONTROL_TOKEN"
+        ip_control.get_tv_states.return_value = {
+            "speakerSelect": "internal",
+            "volume": 27,
+            "mute": "muteOff",
+            "pictureSize": "16:9",
+            "pictureMode": "Dynamic",
+            "soundMode": "Standard",
+            "inputSource": "HDMI1",
+        }
+        yield ip_control
 
 
 @pytest.fixture(name="rest_api_non_ssl_only")

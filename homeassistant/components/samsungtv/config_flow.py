@@ -44,6 +44,7 @@ from .bridge import (
     model_may_require_encryption,
 )
 from .const import (
+    CONF_IP_CONTROL_TOKEN,
     CONF_MANUFACTURER,
     CONF_SESSION_ID,
     CONF_SSDP_MAIN_TV_AGENT_LOCATION,
@@ -57,6 +58,7 @@ from .const import (
     RESULT_AUTH_MISSING,
     RESULT_CANNOT_CONNECT,
     RESULT_INVALID_PIN,
+    RESULT_IP_CONTROL_PAIRING_FAILED,
     RESULT_NOT_SUPPORTED,
     RESULT_SUCCESS,
     SUCCESSFUL_RESULTS,
@@ -64,6 +66,11 @@ from .const import (
     UPNP_SVC_RENDERING_CONTROL,
 )
 from .coordinator import SamsungTVConfigEntry
+from .ip_control import (
+    REAUTH_IP_CONTROL,
+    async_ip_control_is_available,
+    async_ip_control_pair,
+)
 
 DATA_SCHEMA = probatio.Schema({probatio.Required(CONF_HOST): TextSelector()})
 
@@ -134,6 +141,7 @@ class SamsungTVConfigFlow(ConfigFlow, domain=DOMAIN):
         self._id: int | None = None
         self._device_info: dict[str, Any] | None = None
         self._authenticator: SamsungTVEncryptedWSAsyncAuthenticator | None = None
+        self._ip_control_token: str | None = None
 
     def _base_config_entry(self) -> dict[str, Any]:
         """Generate the base config entry without the method."""
@@ -153,6 +161,8 @@ class SamsungTVConfigFlow(ConfigFlow, domain=DOMAIN):
         data = self._base_config_entry()
         if self._bridge.token:
             data[CONF_TOKEN] = self._bridge.token
+        if self._ip_control_token:
+            data[CONF_IP_CONTROL_TOKEN] = self._ip_control_token
         return self.async_create_entry(
             title=self._title,
             data=data,
@@ -298,10 +308,9 @@ class SamsungTVConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             if await self._async_set_name_host_from_input(user_input):
                 self._async_abort_entries_match({CONF_HOST: self._host})
-                return self.async_update_reload_and_abort(
-                    reconfigure_entry,
-                    data_updates={CONF_HOST: self._host},
-                )
+                if await async_ip_control_is_available(self.hass, self._host):
+                    return await self.async_step_ip_control()
+                return self._async_finish_ip_control()
             errors = {"base": "invalid_host"}
 
         suggested_values = user_input or {CONF_HOST: reconfigure_entry.data[CONF_HOST]}
@@ -314,6 +323,62 @@ class SamsungTVConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    @callback
+    def _async_finish_ip_control(self) -> ConfigFlowResult:
+        """Finish the flow after the optional IP control pairing."""
+        if self.source != SOURCE_RECONFIGURE:
+            return self._get_entry_from_bridge()
+        data_updates = {CONF_HOST: self._host}
+        if self._ip_control_token:
+            data_updates[CONF_IP_CONTROL_TOKEN] = self._ip_control_token
+        return self._async_update_entry_and_abort(
+            self._get_reconfigure_entry(), data_updates
+        )
+
+    @callback
+    def _async_update_entry_and_abort(
+        self, entry: SamsungTVConfigEntry, data_updates: Mapping[str, Any]
+    ) -> ConfigFlowResult:
+        """Update the config entry, and make sure it is reloaded."""
+        if entry.update_listeners:
+            # A loaded entry is reloaded by its update listener
+            return self.async_update_and_abort(entry, data_updates=data_updates)
+        return self.async_update_reload_and_abort(entry, data_updates=data_updates)
+
+    async def async_step_ip_control(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Offer to pair with the IP control API when it is enabled on the TV."""
+        return self.async_show_menu(
+            step_id="ip_control",
+            menu_options=["ip_control_pairing", "ip_control_skip"],
+            description_placeholders={"device": self._title},
+        )
+
+    async def async_step_ip_control_skip(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Continue without IP control."""
+        return self._async_finish_ip_control()
+
+    async def async_step_ip_control_pairing(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Pair with the IP control API by accepting the message on the TV."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            if token := await async_ip_control_pair(self.hass, self._host):
+                self._ip_control_token = token
+                return self._async_finish_ip_control()
+            errors = {"base": RESULT_IP_CONTROL_PAIRING_FAILED}
+
+        return self.async_show_form(
+            step_id="ip_control_pairing",
+            errors=errors,
+            description_placeholders={"device": self._title},
+            data_schema=probatio.Schema({}),
+        )
+
     async def async_step_pairing(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -322,6 +387,8 @@ class SamsungTVConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             result = await self._bridge.async_try_connect()
             if result == RESULT_SUCCESS:
+                if await async_ip_control_is_available(self.hass, self._host):
+                    return await self.async_step_ip_control()
                 return self._get_entry_from_bridge()
             if result == RESULT_CANNOT_CONNECT and model_may_require_encryption(
                 self._model
@@ -600,7 +667,31 @@ class SamsungTVConfigFlow(ConfigFlow, domain=DOMAIN):
         self, entry_data: Mapping[str, Any]
     ) -> ConfigFlowResult:
         """Handle configuration by re-auth."""
+        if entry_data.get(REAUTH_IP_CONTROL):
+            return await self.async_step_reauth_ip_control()
         return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_ip_control(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Pair again with the IP control API."""
+        errors: dict[str, str] = {}
+        reauth_entry = self._get_reauth_entry()
+        if user_input is not None:
+            if token := await async_ip_control_pair(
+                self.hass, reauth_entry.data[CONF_HOST]
+            ):
+                return self._async_update_entry_and_abort(
+                    reauth_entry, {CONF_IP_CONTROL_TOKEN: token}
+                )
+            errors = {"base": RESULT_IP_CONTROL_PAIRING_FAILED}
+
+        self.context["title_placeholders"] = {"device": reauth_entry.title}
+        return self.async_show_form(
+            step_id="reauth_ip_control",
+            errors=errors,
+            description_placeholders={"device": reauth_entry.title},
+        )
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None

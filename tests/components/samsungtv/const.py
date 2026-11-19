@@ -3,6 +3,7 @@
 from pytest_homeassistant.common import load_json_object_fixture
 
 from homeassistant.components.samsungtv.const import (
+    CONF_IP_CONTROL_TOKEN,
     CONF_SESSION_ID,
     DOMAIN,
     ENCRYPTED_WEBSOCKET_PORT,
@@ -42,6 +43,10 @@ ENTRYDATA_WEBSOCKET = {
     CONF_MAC: "aa:bb:cc:dd:ee:ff",
     CONF_MODEL: "UE43LS003",
     CONF_TOKEN: "123456789",
+}
+ENTRYDATA_WEBSOCKET_IP_CONTROL = {
+    **ENTRYDATA_WEBSOCKET,
+    CONF_IP_CONTROL_TOKEN: "IP_CONTROL_TOKEN",
 }
 
 

@@ -2,7 +2,7 @@
 
 from collections.abc import Callable, Coroutine
 from datetime import timedelta
-from typing import Any, override
+from typing import TYPE_CHECKING, Any, override
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -10,6 +10,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .bridge import SamsungTVBridge
 from .const import DOMAIN, LOGGER
+
+if TYPE_CHECKING:
+    from .ip_control import SamsungTVIPControl
 
 SCAN_INTERVAL = 10
 
@@ -37,6 +40,7 @@ class SamsungTVDataUpdateCoordinator(DataUpdateCoordinator[None]):
         )
 
         self.bridge = bridge
+        self.ip_control: SamsungTVIPControl | None = None
         self.is_on: bool | None = None
         self.async_extra_update: Callable[[], Coroutine[Any, Any, None]] | None = None
 
@@ -57,6 +61,9 @@ class SamsungTVDataUpdateCoordinator(DataUpdateCoordinator[None]):
                 old_state,
                 self.is_on,
             )
+
+        if self.ip_control and self.is_on:
+            await self.ip_control.async_update()
 
         if self.async_extra_update:
             await self.async_extra_update()

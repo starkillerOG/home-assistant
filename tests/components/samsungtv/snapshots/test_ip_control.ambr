@@ -1,0 +1,51 @@
+# serializer version: 1
+# name: test_entry_diagnostics
+  dict({
+    'device_info': dict({
+      'device': dict({
+        'modelName': '82GXARRS',
+        'name': '[TV] Living Room',
+        'networkType': 'wireless',
+        'type': 'Samsung SmartTV',
+        'wifiMac': 'aa:bb:aa:aa:aa:aa',
+      }),
+      'id': 'uuid:be9554b9-c9fb-41f4-8920-22da015376a4',
+    }),
+    'entry': dict({
+      'data': dict({
+        'host': '10.10.12.34',
+        'ip_control_token': '**REDACTED**',
+        'mac': 'aa:bb:cc:dd:ee:ff',
+        'method': 'websocket',
+        'model': 'UE43LS003',
+        'port': 8002,
+        'token': '**REDACTED**',
+      }),
+      'disabled_by': None,
+      'discovery_keys': dict({
+      }),
+      'domain': 'samsungtv',
+      'entry_id': '123456',
+      'minor_version': 2,
+      'options': dict({
+      }),
+      'pref_disable_new_entities': False,
+      'pref_disable_polling': False,
+      'source': 'user',
+      'subentries': list([
+      ]),
+      'title': 'Mock Title',
+      'unique_id': 'be9554b9-c9fb-41f4-8920-22da015376a4',
+      'version': 2,
+    }),
+    'ip_control_states': dict({
+      'inputSource': 'HDMI1',
+      'mute': 'muteOff',
+      'pictureMode': 'Dynamic',
+      'pictureSize': '16:9',
+      'soundMode': 'Standard',
+      'speakerSelect': 'internal',
+      'volume': 27,
+    }),
+  })
+# ---
